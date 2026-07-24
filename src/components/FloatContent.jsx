@@ -1,22 +1,13 @@
-// 떠 있는 창 내용 (지침서 3-3)
-// PiP 창은 하나뿐이므로, 적어둔 모든 메모를 '같은 크기의 타일'로 그리드 배치한다.
-// (창 크기는 개수에 맞춰 자동 조정 → FloatProvider / pip.js)
+// 떠 있는 창 내용 (지침서 3-3) — 원래 크기(460×300)
+// 적어둔 모든 메모를 '같은 크기 타일'로 배치하고, 타일마다 실시간 진행 링(TimerRing).
 import { useState } from 'react'
 import { useStore, useNow } from '../lib/hooks'
 import { listPending, markDone, release, postpone } from '../lib/store'
-import { bombState, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
+import { bombState, progress, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
 import Bomb from './Bomb'
+import TimerRing from './TimerRing'
 import ActionButtons from './ActionButtons'
 import PostponeSheet from './PostponeSheet'
-
-// 타일 배경 = 상태 톤
-const TINT = {
-  exploded: '#fbe9e4',
-  urgent: '#fdeee9',
-  half: '#fff6ec',
-  appear: '#ffffff',
-  peace: '#f4f4f4',
-}
 
 export default function FloatContent() {
   useStore()
@@ -28,7 +19,7 @@ export default function FloatContent() {
     return <Waiting />
   }
 
-  // 급한 순서로 정렬: 터짐 → 진행 중(마감 이른 순) → 평화
+  // 급한 순서로: 터짐 → 진행 중(마감 이른 순) → 평화
   const rank = ({ occ, task }) => {
     if (task.mode === 'peace') return 2
     return remainingMs(occ, now) <= 0 ? 0 : 1
@@ -36,14 +27,8 @@ export default function FloatContent() {
   const items = [...pending].sort((a, b) => rank(a) - rank(b))
 
   return (
-    <div className="h-full w-full overflow-auto bg-white p-1.5">
-      <div
-        className="grid gap-1.5"
-        style={{
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gridAutoRows: '172px',
-        }}
-      >
+    <div className="h-full w-full overflow-auto bg-white p-2">
+      <div className="flex flex-wrap content-center justify-center gap-2" style={{ minHeight: '100%' }}>
         {items.map(({ occ, task }) => (
           <Tile
             key={occ.id}
@@ -68,7 +53,7 @@ export default function FloatContent() {
   )
 }
 
-// 메모 타일 — 모두 같은 크기. 폭탄 / 제목 / 시간 (+ 터짐·평화는 버튼)
+// 메모 타일 — 모두 같은 크기. 실시간 링 + 제목 + 시간 (터짐·평화는 버튼)
 function Tile({ occ, task, now, onPostpone }) {
   const peace = task.mode === 'peace'
   const rem = remainingMs(occ, now)
@@ -78,32 +63,36 @@ function Tile({ occ, task, now, onPostpone }) {
   const resolvable = exploded || peace
 
   return (
-    <div
-      className="flex flex-col items-center justify-between overflow-hidden rounded-2xl p-2 text-center ring-1 ring-line/50"
-      style={{ background: TINT[state] }}
-    >
-      <Bomb state={state} size={46} vibrate={finalCountdown} />
+    <div className="flex w-[138px] flex-col items-center gap-1 rounded-2xl p-1.5 text-center ring-1 ring-line/50">
+      {peace ? (
+        <div className="grid h-[92px] w-[92px] place-items-center">
+          <Bomb state="peace" size={72} />
+        </div>
+      ) : (
+        <TimerRing
+          progress={progress(occ, task, now)}
+          state={state}
+          size={92}
+          vibrate={finalCountdown}
+        />
+      )}
 
-      <p className="line-clamp-2 w-full text-[13px] font-semibold leading-tight text-ink">
-        {task.content}
-      </p>
+      <p className="line-clamp-1 w-full text-[13px] font-semibold text-ink">{task.content}</p>
 
       <p
-        className="text-[12px] tabular-nums"
+        className="text-[12px] font-medium tabular-nums"
         style={{ color: exploded ? '#7a2f26' : finalCountdown ? 'var(--color-flame)' : 'var(--color-sub)' }}
       >
         {peace ? '평화 모드' : exploded ? humanElapsed(occ, now) : `${formatClock(rem)} 남음`}
       </p>
 
-      {resolvable ? (
+      {resolvable && (
         <ActionButtons
           size="sm"
           onDone={() => markDone(occ.id)}
           onRelease={() => release(occ.id)}
           onPostpone={peace ? null : onPostpone}
         />
-      ) : (
-        <span className="h-8" /> /* 버튼 자리 — 타일 높이를 동일하게 유지 */
       )}
     </div>
   )

@@ -2,8 +2,10 @@
 import Bomb from './Bomb'
 
 export default function TimerRing({ progress = 0, state = 'appear', size = 200, vibrate = false }) {
-  const stroke = 5
-  const ringD = 160 // 링 지름
+  // size에 비례 (size=200에서 원래 값: 링 160 · 선 5 · 폭탄 120)
+  const stroke = Math.max(3, Math.round(size * 0.025))
+  const ringD = size * 0.8 // 링 지름
+  const bomb = Math.round(size * 0.6)
   const r = (ringD - stroke) / 2
   const c = 2 * Math.PI * r
   const dash = c * Math.min(1, Math.max(0, progress))
@@ -33,7 +35,7 @@ export default function TimerRing({ progress = 0, state = 'appear', size = 200, 
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
-        <Bomb state={state} size={120} vibrate={vibrate} />
+        <Bomb state={state} size={bomb} vibrate={vibrate} />
       </div>
     </div>
   )
