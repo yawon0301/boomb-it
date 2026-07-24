@@ -70,6 +70,13 @@ export function dueDateClock(occ) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+// 기록용 날짜·시각 "2026. 7. 24. 17:30"
+export function fmtDateTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function pad(n) {
   return String(n).padStart(2, '0')
 }

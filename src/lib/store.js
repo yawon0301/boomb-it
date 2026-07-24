@@ -282,6 +282,15 @@ export function listResolvedToday() {
     .sort((a, b) => new Date(b.occ.responded_at) - new Date(a.occ.responded_at))
 }
 
+// 상태별 전체 기록 (완료됨='done' · 놓아줌='released') — 처리 시각 내림차순
+export function listByStatus(status) {
+  return state.occurrences
+    .filter((o) => o.status === status && o.responded_at)
+    .map((o) => ({ occ: o, task: taskOf(o) }))
+    .filter((x) => x.task)
+    .sort((a, b) => new Date(b.occ.responded_at) - new Date(a.occ.responded_at))
+}
+
 // ── occurrence (쓰기: async) ──────────────────────────────────
 async function spawnNextDaily(task, fromOcc) {
   if (!task || task.repeat_rule !== 'daily') return
@@ -315,6 +324,7 @@ export function release(occId) {
 }
 
 // 미루기 — 새 줄을 만들지 않고 시각만 갱신 (기획서 4-5)
+// 미루면 status가 다시 'pending'이라 DB에 이력이 안 남으므로, 분석용 로그를 로컬에 기록
 export async function postpone(occId, newScheduledAt) {
   const occ = state.occurrences.find((o) => o.id === occId)
   if (!occ || !supabase) return
@@ -331,7 +341,32 @@ export async function postpone(occId, newScheduledAt) {
   }
   await supabase.from('occurrence').update(p).eq('id', occId)
   Object.assign(occ, p)
+  pushPostponeLog({
+    content: task?.content ?? '',
+    postponed_at: new Date().toISOString(), // 미룬 시각
+    to: newScheduledAt.toISOString(), // 새 마감
+  })
   bump()
+}
+
+// ── 미루기 기록 (localStorage — 기기별) ───────────────────────
+const POSTPONE_LOG_KEY = 'boomb-it.postponeLog'
+function pushPostponeLog(entry) {
+  try {
+    const log = JSON.parse(localStorage.getItem(POSTPONE_LOG_KEY)) || []
+    log.unshift(entry)
+    localStorage.setItem(POSTPONE_LOG_KEY, JSON.stringify(log.slice(0, 200)))
+  } catch {
+    /* ignore */
+  }
+}
+export function listPostponed() {
+  try {
+    const log = JSON.parse(localStorage.getItem(POSTPONE_LOG_KEY)) || []
+    return Array.isArray(log) ? log : []
+  } catch {
+    return []
+  }
 }
 
 // ── 반복 발생 생성 (기획서 5-4) — 로드 시 1회 ─────────────────

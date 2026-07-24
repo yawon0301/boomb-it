@@ -14,6 +14,7 @@ import Checklist from './pages/Checklist'
 import NewTask from './pages/NewTask'
 import TaskDetail from './pages/TaskDetail'
 import Settings from './pages/Settings'
+import Archive from './pages/Archive'
 
 // 폭발 10초 전 알림 감시 (지침서 5-3 · B-5) — 항목당 1회
 function NotifyWatcher() {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/new" element={<NewTask />} />
           <Route path="/task/:id" element={<TaskDetail />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/archive" element={<Archive />} />
         </Route>
         <Route
           path="/float"
