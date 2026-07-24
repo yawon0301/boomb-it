@@ -68,3 +68,50 @@ body {
   .bomb-shake,
   .bomb-vibrate { animation: none; }
 }
+
+/* ── 페이지 전환용 폭발 연출 (시작하기 → /app) ── */
+/* 폭탄 등장: 작게 튀어나와 살짝 오버슈트 후 자리잡음 */
+@keyframes boomIn {
+  0% { transform: scale(0.2) translateY(28px); opacity: 0; }
+  55% { transform: scale(1.12) translateY(0); opacity: 1; }
+  75% { transform: scale(0.96); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.boom-in { animation: boomIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* 터지는 순간 폭탄이 부풀며 사라짐 */
+@keyframes boomPop {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.boom-pop { animation: boomPop 0.22s ease-out both; }
+
+/* 하얀 섬광 — 커지며 사라짐 */
+@keyframes boomFlash {
+  0% { transform: scale(0.2); opacity: 0.95; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+.boom-flash { animation: boomFlash 0.5s ease-out both; }
+
+/* 파편 링 — 퍼지며 사라짐 */
+@keyframes boomBurst {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.boom-burst { animation: boomBurst 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+/* 화면 흔들림 */
+@keyframes boomScreenShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 4px); }
+  40% { transform: translate(6px, -4px); }
+  60% { transform: translate(-4px, -3px); }
+  80% { transform: translate(4px, 3px); }
+}
+.boom-screen-shake { animation: boomScreenShake 0.4s ease-in-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .boom-in, .boom-pop, .boom-flash, .boom-burst, .boom-screen-shake {
+    animation-duration: 0.01ms !important;
+  }
+}
