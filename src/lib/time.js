@@ -64,6 +64,12 @@ export function dueClock(occ) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+// 마감 날짜·시각 "7월 24일 17:00"
+export function dueDateClock(occ) {
+  const d = new Date(occ.scheduled_at)
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function pad(n) {
   return String(n).padStart(2, '0')
 }

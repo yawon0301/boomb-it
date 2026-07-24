@@ -4,7 +4,6 @@ import { Settings as SettingsIcon, Plus, PictureInPicture2 } from 'lucide-react'
 import { useStore, useNow } from '../lib/hooks'
 import {
   listPending,
-  listResolvedToday,
   createTask,
   getSettings,
   setSettings,
@@ -25,8 +24,8 @@ export default function Checklist() {
   const float = useFloat()
   const auth = useAuth()
 
-  const pending = listPending()
-  const resolved = listResolvedToday()
+  // 첫 화면에는 '처리 중'인 계획만 — 타이머(폭탄 모드)가 걸린 항목만 표시
+  const timers = listPending().filter(({ task }) => task.mode === 'bomb')
 
   // 빠른 추가 — 기본: 폭탄 모드, 1시간 뒤 마감, 타이머 30분
   async function quickAdd(content) {
@@ -104,34 +103,20 @@ export default function Checklist() {
 
         {!isLoaded() ? (
           <div className="px-4 py-16 text-center text-[13px] text-sub">불러오는 중…</div>
-        ) : pending.length === 0 && resolved.length === 0 ? (
+        ) : timers.length === 0 ? (
           <Empty loggedIn={auth.isLoggedIn} />
         ) : (
           <div className="py-1">
-            {pending.map(({ occ, task }) => (
+            {timers.map(({ occ, task }) => (
               <TaskRow
                 key={occ.id}
                 occ={occ}
                 task={task}
                 now={now}
+                compact
                 onOpen={() => nav(`/task/${task.id}`)}
               />
             ))}
-
-            {resolved.length > 0 && (
-              <>
-                <p className="px-4 pb-1 pt-4 text-[12px] font-medium text-sub">오늘 처리함</p>
-                {resolved.map(({ occ, task }) => (
-                  <TaskRow
-                    key={occ.id}
-                    occ={occ}
-                    task={task}
-                    now={now}
-                    onOpen={() => nav(`/task/${task.id}`)}
-                  />
-                ))}
-              </>
-            )}
           </div>
         )}
       </div>

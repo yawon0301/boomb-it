@@ -1,9 +1,16 @@
 // 체크리스트 한 줄 — 인스타 DM 밀도 참고 (지침서 3-2)
 import { Check } from 'lucide-react'
 import Bomb from './Bomb'
-import { bombState, remainingMs, humanRemain, humanElapsed, dueClock } from '../lib/time'
+import {
+  bombState,
+  remainingMs,
+  humanRemain,
+  humanElapsed,
+  dueClock,
+  dueDateClock,
+} from '../lib/time'
 
-export default function TaskRow({ occ, task, now, onOpen }) {
+export default function TaskRow({ occ, task, now, onOpen, compact = false }) {
   const resolved = occ.status !== 'pending'
   const done = occ.status === 'done'
   const state = resolved ? (task.mode === 'peace' ? 'peace' : 'exploded') : bombState(occ, task, now)
@@ -17,6 +24,34 @@ export default function TaskRow({ occ, task, now, onOpen }) {
   else if (task.mode === 'peace') statusLine = '평화 모드'
   else if (exploded) statusLine = humanElapsed(occ, now)
   else statusLine = humanRemain(occ, now)
+
+  // 첫 화면용 컴팩트 줄 — 제목 / 날짜·시간 / 남은 시간
+  if (compact) {
+    const remainColor = exploded || finalCountdown ? 'var(--color-flame)' : 'var(--color-sub)'
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full items-center gap-2.5 px-4 py-2 text-left transition active:bg-fill/60"
+      >
+        <span className="grid h-9 w-9 shrink-0 place-items-center">
+          <Bomb state={state} size={34} vibrate={finalCountdown} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14px] font-medium text-ink">{task.content}</span>
+          <span className="mt-0.5 block truncate text-[12px] tabular-nums text-sub">
+            {dueDateClock(occ)}
+          </span>
+        </span>
+        <span
+          className="shrink-0 text-[13px] font-medium tabular-nums"
+          style={{ color: remainColor }}
+        >
+          {statusLine}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <button
