@@ -5,16 +5,36 @@ export function pipSupported() {
   return 'documentPictureInPicture' in window
 }
 
-export async function openFloat() {
+// 메모 개수에 맞춰 창 크기 계산 — 모든 타일이 한눈에 보이도록
+// 타일은 같은 비율(같은 크기)로 그리드 배치되며, 최대 4열까지 가로로 늘린 뒤 줄바꿈
+const TILE_W = 200
+const TILE_H = 184
+const MAX_COLS = 4
+
+export function floatGrid(count = 1) {
+  const n = Math.max(1, count)
+  const cols = Math.min(n, MAX_COLS)
+  const rows = Math.ceil(n / cols)
+  return { cols, rows }
+}
+
+export function floatSize(count = 1) {
+  const { cols, rows } = floatGrid(count)
+  const availW = window.screen?.availWidth || 1280
+  const availH = window.screen?.availHeight || 800
+  const width = Math.max(320, Math.min(cols * TILE_W, Math.floor(availW * 0.9)))
+  const height = Math.max(200, Math.min(rows * TILE_H, Math.floor(availH * 0.9)))
+  return { width, height }
+}
+
+export async function openFloat(count = 1) {
   if (!pipSupported()) {
     throw new Error('이 브라우저는 떠 있는 창(PiP)을 지원하지 않습니다. Chrome/Edge를 권장합니다.')
   }
 
-  // 가로형(landscape) 고정 — 폭탄을 왼쪽, 정보를 오른쪽에 배치
-  const pip = await window.documentPictureInPicture.requestWindow({
-    width: 460,
-    height: 300,
-  })
+  // 메모 개수에 맞춘 크기로 — 모든 타일이 보이도록 자동 비율
+  const { width, height } = floatSize(count)
+  const pip = await window.documentPictureInPicture.requestWindow({ width, height })
 
   // ⚠ 이 복사가 없으면 떠 있는 창에서 Tailwind가 전혀 안 먹습니다 (지침서 함정 2)
   for (const sheet of document.styleSheets) {
