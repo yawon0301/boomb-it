@@ -1,20 +1,27 @@
 // / — 붐잇 체크리스트 (첫 화면)
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Settings as SettingsIcon, Plus, PictureInPicture2 } from 'lucide-react'
 import { useStore, useNow } from '../lib/hooks'
 import {
   listPending,
   createTask,
+  markDone,
+  release,
+  postpone,
   getSettings,
   setSettings,
   isLoaded,
 } from '../lib/store'
+import { remainingMs, humanElapsed, dueDateClock } from '../lib/time'
 import { askPermission, permissionState } from '../lib/notify'
 import { unlockAudio } from '../lib/sound'
 import { useFloat } from '../components/FloatProvider'
 import { useAuth } from '../components/AuthProvider'
 import Header from '../components/Header'
 import TaskRow from '../components/TaskRow'
+import Bomb from '../components/Bomb'
+import PostponeSheet from '../components/PostponeSheet'
 import BottomInput from '../components/BottomInput'
 
 export default function Checklist() {
@@ -23,9 +30,13 @@ export default function Checklist() {
   const nav = useNavigate()
   const float = useFloat()
   const auth = useAuth()
+  const [postponing, setPostponing] = useState(null) // occId (미루기 시트)
 
   // 첫 화면에는 '처리 중'인 계획만 — 타이머(폭탄 모드)가 걸린 항목만 표시
   const timers = listPending().filter(({ task }) => task.mode === 'bomb')
+  // 타이머가 끝난(폭발한) 메모는 상단 메뉴바로, 나머지는 아래 목록으로 분리
+  const ended = timers.filter(({ occ }) => remainingMs(occ, now) <= 0)
+  const active = timers.filter(({ occ }) => remainingMs(occ, now) > 0)
 
   // 빠른 추가 — 기본: 폭탄 모드, 1시간 뒤 마감, 타이머 30분
   async function quickAdd(content) {
@@ -106,20 +117,43 @@ export default function Checklist() {
         ) : timers.length === 0 ? (
           <Empty loggedIn={auth.isLoggedIn} />
         ) : (
-          <div className="py-1">
-            {timers.map(({ occ, task }) => (
-              <TaskRow
-                key={occ.id}
-                occ={occ}
-                task={task}
+          <>
+            {/* 타이머가 끝난 폭탄 — 상단 메뉴바 (완료됨/미루기/놓아주기 분리) */}
+            {ended.length > 0 && (
+              <EndedBar
+                items={ended}
                 now={now}
-                compact
-                onOpen={() => nav(`/task/${task.id}`)}
+                onDone={(id) => markDone(id)}
+                onPostpone={(id) => setPostponing(id)}
+                onRelease={(id) => release(id)}
               />
-            ))}
-          </div>
+            )}
+
+            <div className="py-1">
+              {active.map(({ occ, task }) => (
+                <TaskRow
+                  key={occ.id}
+                  occ={occ}
+                  task={task}
+                  now={now}
+                  compact
+                  onOpen={() => nav(`/task/${task.id}`)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {postponing != null && (
+        <PostponeSheet
+          onClose={() => setPostponing(null)}
+          onPick={(date) => {
+            postpone(postponing, date)
+            setPostponing(null)
+          }}
+        />
+      )}
 
       {auth.isLoggedIn ? (
         <BottomInput onSubmit={quickAdd} />
@@ -136,6 +170,73 @@ export default function Checklist() {
         </button>
       )}
     </>
+  )
+}
+
+// 타이머가 끝난(폭발한) 메모 — 상단 메뉴바.
+// 항목마다 완료됨/미루기/놓아주기 버튼을 각각 분리해 배치한다.
+function EndedBar({ items, now, onDone, onPostpone, onRelease }) {
+  return (
+    <section
+      className="sticky top-0 z-10 border-b border-line"
+      style={{ background: 'var(--color-flame-soft)' }}
+    >
+      <div className="flex items-center gap-1.5 px-4 pt-3 pb-1">
+        <Bomb state="exploded" size={20} />
+        <span className="text-[12px] font-semibold" style={{ color: '#7a2f26' }}>
+          터진 폭탄
+        </span>
+        <span className="text-[12px] tabular-nums" style={{ color: '#7a2f26', opacity: 0.7 }}>
+          {items.length}
+        </span>
+      </div>
+
+      <div className="divide-y divide-line/60">
+        {items.map(({ occ, task }) => (
+          <div key={occ.id} className="px-4 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <Bomb state="exploded" size={30} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-medium text-ink">{task.content}</p>
+                <p className="mt-0.5 truncate text-[12px] tabular-nums text-sub">
+                  {dueDateClock(occ)} · {humanElapsed(occ, now)}
+                </p>
+              </div>
+            </div>
+
+            {/* 완료됨 / 미루기 / 놓아주기 — 각각 분리 */}
+            <div className="mt-2 grid grid-cols-3 gap-1.5">
+              <MenuAction label="완료됨" bg="#e3f5e9" color="#1b7f3b" onClick={() => onDone(occ.id)} />
+              <MenuAction
+                label="미루기"
+                bg="var(--color-flame-soft)"
+                color="var(--color-flame)"
+                onClick={() => onPostpone(occ.id)}
+              />
+              <MenuAction
+                label="놓아주기"
+                bg="var(--color-fill)"
+                color="var(--color-sub)"
+                onClick={() => onRelease(occ.id)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function MenuAction({ label, bg, color, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full py-2 text-[13px] font-semibold transition active:scale-95"
+      style={{ background: bg, color }}
+    >
+      {label}
+    </button>
   )
 }
 
