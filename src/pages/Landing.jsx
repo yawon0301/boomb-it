@@ -12,10 +12,14 @@ export default function Landing() {
   const { isLoggedIn } = useAuth()
   const [booming, setBooming] = useState(false) // 시작하기 → 폭발 전환 중
 
-  // 이미 로그인돼 있으면(카카오 리다이렉트 복귀 포함) 바로 앱으로
+  // 진입 시엔 로그인 여부와 상관없이 항상 소개화면을 보여준다.
+  // 단, 카카오 로그인 직후 돌아온 경우(URL에 OAuth 파라미터)만 바로 앱으로.
+  const [fromOAuth] = useState(
+    () => typeof window !== 'undefined' && /[?&#](code|access_token)=/.test(window.location.href),
+  )
   useEffect(() => {
-    if (isLoggedIn) nav('/app', { replace: true })
-  }, [isLoggedIn, nav])
+    if (fromOAuth && isLoggedIn) nav('/app', { replace: true })
+  }, [fromOAuth, isLoggedIn, nav])
 
   // 시작하기: 폭탄이 터지는 연출 뒤 앱으로 진입
   function start() {
