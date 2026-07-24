@@ -1,15 +1,17 @@
 // /settings — 알림 권한, 떠 있는 창
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, PictureInPicture2, Check, X, Volume2, Bomb as BombIcon } from 'lucide-react'
+import { Bell, PictureInPicture2, Check, X, Volume2, Bomb as BombIcon, LogOut, MessageSquare } from 'lucide-react'
 import { askPermission, permissionState } from '../lib/notify'
 import { setSettings, addTestBomb } from '../lib/store'
 import { playBoom, unlockAudio, getBoomVolume, setBoomVolume } from '../lib/sound'
 import { useFloat } from '../components/FloatProvider'
+import { useAuth } from '../components/AuthProvider'
 import Header from '../components/Header'
 
 export default function Settings() {
   const float = useFloat()
+  const auth = useAuth()
   const nav = useNavigate()
   const [perm, setPerm] = useState(permissionState())
   const [volume, setVolume] = useState(getBoomVolume())
@@ -35,6 +37,44 @@ export default function Settings() {
     <>
       <Header title="설정" back />
       <div className="flex-1 overflow-y-auto px-4 py-5">
+        {/* 계정 — 카카오 로그인 */}
+        <section className="mb-6 rounded-2xl bg-white p-4 ring-1 ring-line">
+          <div className="mb-3 flex items-center gap-2 text-ink">
+            <MessageSquare size={18} />
+            <h2 className="text-[15px] font-semibold">계정</h2>
+          </div>
+
+          {auth.isLoggedIn ? (
+            <>
+              <p className="mb-3 text-[14px] text-ink">
+                <b>{auth.nickname}</b> 님
+              </p>
+              <button
+                onClick={auth.logout}
+                className="flex items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-[14px] font-medium text-ink transition active:bg-fill"
+              >
+                <LogOut size={16} /> 로그아웃
+              </button>
+              <p className="mt-2 text-[12px] text-sub">
+                로그아웃하면 이 기기에 적어둔 할 일은 볼 수 없어요
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-[13px] leading-relaxed text-sub">
+                로그인하면 다른 기기에서도 이어서 쓸 수 있어요. 지금 적어둔 할 일은 그대로 유지됩니다.
+              </p>
+              <button
+                onClick={auth.loginKakao}
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3 text-[15px] font-semibold transition active:scale-[0.98]"
+                style={{ background: '#FEE500', color: '#191600' }}
+              >
+                <MessageSquare size={17} fill="#191600" strokeWidth={0} /> 카카오로 계속하기
+              </button>
+            </>
+          )}
+        </section>
+
         {/* 떠 있게 하기 — 눈에 띄는 곳에 (지침서 5-4 / 6) */}
         <section className="mb-6 rounded-2xl bg-white p-4 ring-1 ring-line">
           <div className="mb-3 flex items-center gap-2 text-ink">
