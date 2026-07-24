@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useStore, useNow } from '../lib/hooks'
 import { listPending, markDone, release, postpone } from '../lib/store'
-import { bombState, progress, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
+import { bombState, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
 import Bomb from './Bomb'
 import TimerRing from './TimerRing'
 import ActionButtons from './ActionButtons'
@@ -70,7 +70,8 @@ function Tile({ occ, task, now, onPostpone }) {
         </div>
       ) : (
         <TimerRing
-          progress={progress(occ, task, now)}
+          startAt={new Date(occ.bomb_starts_at).getTime()}
+          endAt={new Date(occ.scheduled_at).getTime()}
           state={state}
           size={92}
           vibrate={finalCountdown}

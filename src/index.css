@@ -69,6 +69,12 @@ body {
   .bomb-vibrate { animation: none; }
 }
 
+/* 떠 있는 창 진행 링 — 남은 시간에 맞춰 실시간으로 채워짐(끝에서 offset 0).
+   CSS 애니메이션이라 메인 탭이 스로틀돼도 PiP 창에서 계속 부드럽게 돈다. */
+@keyframes ringFill {
+  to { stroke-dashoffset: 0; }
+}
+
 /* ── 페이지 전환용 폭발 연출 (시작하기 → /app) ── */
 /* 폭탄 등장: 작게 튀어나와 살짝 오버슈트 후 자리잡음 */
 @keyframes boomIn {
