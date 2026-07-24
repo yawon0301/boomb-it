@@ -1,29 +1,13 @@
-// 떠 있는 창 내용 (지침서 3-3) — 가로형(landscape) 레이아웃
-// PiP 포털과 /float 미리보기가 함께 사용
+// 떠 있는 창 내용 (지침서 3-3)
+// PiP 창은 하나뿐이므로, 적어둔 모든 메모를 상태별 섹션으로 나눠 보여준다.
+//  · 터졌어요(마감 지남) / 진행 중(타이머 카운트다운) / 평화 모드
 import { useState } from 'react'
 import { useStore, useNow } from '../lib/hooks'
 import { listPending, markDone, release, postpone } from '../lib/store'
-import {
-  bombState,
-  progress,
-  remainingMs,
-  formatClock,
-  humanDur,
-  humanElapsed,
-} from '../lib/time'
+import { bombState, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
 import Bomb from './Bomb'
-import TimerRing from './TimerRing'
 import ActionButtons from './ActionButtons'
 import PostponeSheet from './PostponeSheet'
-
-// 배경색 = 폭탄 상태색 (몸통 색 흐름: 흰 → 살구 → 붉음 → 그을음)
-const STATE_BG = {
-  appear: '#ffffff',
-  half: '#f6d9c6',
-  urgent: '#de8877',
-  exploded: '#b8b8b8',
-  peace: '#ffffff',
-}
 
 export default function FloatContent() {
   useStore()
@@ -35,93 +19,38 @@ export default function FloatContent() {
     return <Waiting />
   }
 
-  const [topEntry, ...rest] = pending
-  const { occ, task } = topEntry
-  const rem = remainingMs(occ, now)
-  const exploded = task.mode === 'bomb' && rem <= 0
-  const peace = task.mode === 'peace'
-  const finalCountdown = !peace && rem > 0 && rem <= 10000 // 마지막 10초 연속 진동
-  const state = peace ? 'peace' : bombState(occ, task, now)
+  // 상태별로 분류 (listPending은 마감 이른 순 정렬)
+  const exploded = pending.filter(({ occ, task }) => task.mode === 'bomb' && remainingMs(occ, now) <= 0)
+  const active = pending.filter(({ occ, task }) => task.mode === 'bomb' && remainingMs(occ, now) > 0)
+  const peace = pending.filter(({ task }) => task.mode === 'peace')
 
   return (
-    <div
-      className="flex h-full w-full flex-col transition-colors duration-700"
-      style={{ background: STATE_BG[state] }}
-    >
-      {/* 메인 — 가로 배치: 왼쪽 폭탄 / 오른쪽 정보 */}
-      <div className="flex flex-1 items-center gap-3 px-4 pt-3 pb-1">
-        <div className="grid shrink-0 place-items-center">
-          {peace ? (
-            <div className="grid h-[168px] w-[168px] place-items-center">
-              <Bomb state="peace" size={140} />
-            </div>
-          ) : (
-            <TimerRing
-              progress={progress(occ, task, now)}
-              state={state}
-              size={168}
-              vibrate={finalCountdown}
+    <div className="flex h-full w-full flex-col bg-white">
+      <div className="flex-1 overflow-y-auto">
+        <Section title="터졌어요" count={exploded.length} tint="#fbe9e4" color="#7a2f26">
+          {exploded.map(({ occ, task }) => (
+            <Row
+              key={occ.id}
+              occ={occ}
+              task={task}
+              now={now}
+              onPostpone={() => setPostponing(occ.id)}
             />
-          )}
-        </div>
+          ))}
+        </Section>
 
-        <div className="flex min-w-0 flex-1 flex-col items-start text-left">
-          {peace ? (
-            <p className="text-[13px] text-sub">평화 모드</p>
-          ) : exploded ? (
-            <p className="text-[17px] font-semibold" style={{ color: '#7a2f26' }}>
-              {humanElapsed(occ, now)}
-            </p>
-          ) : (
-            <p className="text-4xl font-extralight tabular-nums tracking-tight text-ink">
-              {formatClock(remainingMs(occ, now))}
-            </p>
-          )}
+        <Section title="진행 중" count={active.length} tint="#fff3e0" color="var(--color-flame)">
+          {active.map(({ occ, task }) => (
+            <Row key={occ.id} occ={occ} task={task} now={now} />
+          ))}
+        </Section>
 
-          <p className="mt-1 line-clamp-2 text-[15px] font-medium text-ink">{task.content}</p>
-
-          {(exploded || peace) && (
-            <div className="mt-2.5">
-              <ActionButtons
-                compact
-                onDone={() => markDone(occ.id)}
-                onRelease={() => release(occ.id)}
-                onPostpone={peace ? null : () => setPostponing(occ.id)}
-              />
-            </div>
-          )}
-        </div>
+        <Section title="평화 모드" count={peace.length} tint="#f2f2f2" color="var(--color-sub)">
+          {peace.map(({ occ, task }) => (
+            <Row key={occ.id} occ={occ} task={task} now={now} />
+          ))}
+        </Section>
       </div>
-
-      {/* 나머지 — 아래에 가로로 작게 */}
-      {rest.length > 0 && (
-        <div className="flex shrink-0 gap-1.5 overflow-x-auto px-3 pb-2">
-          {rest.slice(0, 4).map(({ occ: o, task: t }) => {
-            const r = remainingMs(o, now)
-            const ex = t.mode === 'bomb' && r <= 0
-            return (
-              <div
-                key={o.id}
-                className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/75 px-2 py-1"
-              >
-                <Bomb
-                  state={t.mode === 'peace' ? 'peace' : bombState(o, t, now)}
-                  size={22}
-                  vibrate={t.mode === 'bomb' && r > 0 && r <= 10000}
-                />
-                <span className="max-w-[80px] truncate text-[11px] text-ink">{t.content}</span>
-                <span className="shrink-0 text-[11px] tabular-nums text-sub">
-                  {t.mode === 'peace'
-                    ? '평화'
-                    : ex
-                      ? humanElapsed(o, now)
-                      : formatClock(remainingMs(o, now))}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      )}
 
       {postponing != null && (
         <PostponeSheet
@@ -131,6 +60,69 @@ export default function FloatContent() {
             setPostponing(null)
           }}
         />
+      )}
+    </div>
+  )
+}
+
+// 섹션 — 항목이 있을 때만 렌더
+function Section({ title, count, tint, color, children }) {
+  if (!count) return null
+  return (
+    <section>
+      <div
+        className="sticky top-0 z-10 flex items-center gap-1.5 px-3 py-1"
+        style={{ background: tint }}
+      >
+        <span className="text-[11px] font-semibold" style={{ color }}>
+          {title}
+        </span>
+        <span className="text-[11px] tabular-nums" style={{ color, opacity: 0.7 }}>
+          {count}
+        </span>
+      </div>
+      <div className="divide-y divide-line/60">{children}</div>
+    </section>
+  )
+}
+
+// 메모 한 줄 — 폭탄 + 제목 + 시간, (터짐/평화는 완료·놓아주기 버튼)
+function Row({ occ, task, now, onPostpone }) {
+  const peace = task.mode === 'peace'
+  const rem = remainingMs(occ, now)
+  const exploded = task.mode === 'bomb' && rem <= 0
+  const finalCountdown = !peace && rem > 0 && rem <= 10000
+  const state = peace ? 'peace' : bombState(occ, task, now)
+
+  const resolvable = exploded || peace
+
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-1.5">
+      <span className="grid h-9 w-9 shrink-0 place-items-center">
+        <Bomb state={state} size={32} vibrate={finalCountdown} />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium text-ink">{task.content}</p>
+        <p className="text-[11px] tabular-nums text-sub">
+          {peace ? '평화 모드' : exploded ? humanElapsed(occ, now) : `${formatClock(rem)} 남음`}
+        </p>
+      </div>
+
+      {resolvable ? (
+        <ActionButtons
+          size="sm"
+          onDone={() => markDone(occ.id)}
+          onRelease={() => release(occ.id)}
+          onPostpone={peace ? null : onPostpone}
+        />
+      ) : (
+        <span
+          className="shrink-0 text-[15px] font-light tabular-nums tracking-tight text-ink"
+          style={{ color: finalCountdown ? 'var(--color-flame)' : undefined }}
+        >
+          {formatClock(rem)}
+        </span>
       )}
     </div>
   )
