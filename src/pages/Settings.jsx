@@ -21,6 +21,11 @@ export default function Settings() {
     setBoomVolume(v) // localStorage 저장
   }
 
+  async function logout() {
+    await auth.logout()
+    nav('/', { replace: true }) // 로그아웃하면 첫 페이지로
+  }
+
   function testBomb() {
     unlockAudio() // 이 클릭 제스처로 오디오 잠금 해제
     addTestBomb(10)
@@ -50,7 +55,7 @@ export default function Settings() {
                 <b>{auth.nickname}</b> 님
               </p>
               <button
-                onClick={auth.logout}
+                onClick={logout}
                 className="flex items-center justify-center gap-2 rounded-full border border-line px-4 py-2.5 text-[14px] font-medium text-ink transition active:bg-fill"
               >
                 <LogOut size={16} /> 로그아웃
