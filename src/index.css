@@ -110,8 +110,8 @@ body {
 }
 .boom-screen-shake { animation: boomScreenShake 0.4s ease-in-out both; }
 
+/* reduced-motion에서도 폭발(등장·펑·섬광·파편)은 그대로 보여주고,
+   멀미를 유발하는 좌우 잔진동/화면 흔들림만 끈다. */
 @media (prefers-reduced-motion: reduce) {
-  .boom-in, .boom-pop, .boom-flash, .boom-burst, .boom-screen-shake {
-    animation-duration: 0.01ms !important;
-  }
+  .boom-screen-shake { animation: none; }
 }

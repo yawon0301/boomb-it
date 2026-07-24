@@ -12,9 +12,10 @@ export default function BombBoom({ onDone }) {
   const done = useRef(false)
 
   useEffect(() => {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    const armMs = reduce ? 60 : 620 // 폭탄이 떨리는 시간
-    const boomMs = reduce ? 120 : 560 // 폭발 여운
+    // reduced-motion이어도 폭발 자체(섬광·파편·소리)는 보여준다.
+    // 접근성 차원의 '잔진동·화면 흔들림'만 CSS에서 끈다.
+    const armMs = 620 // 폭탄이 떨리는 시간
+    const boomMs = 560 // 폭발 여운
 
     const t1 = setTimeout(() => {
       setPhase('boom')
