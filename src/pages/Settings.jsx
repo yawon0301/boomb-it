@@ -24,7 +24,7 @@ export default function Settings() {
   function testBomb() {
     unlockAudio() // 이 클릭 제스처로 오디오 잠금 해제
     addTestBomb(10)
-    nav('/') // 체크리스트에서 10초 카운트다운 → 폭발음 확인
+    nav('/app') // 체크리스트에서 10초 카운트다운 → 폭발음 확인
   }
 
   async function requestPerm() {

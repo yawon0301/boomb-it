@@ -13,6 +13,7 @@ import {
 import { askPermission, permissionState } from '../lib/notify'
 import { unlockAudio } from '../lib/sound'
 import { useFloat } from '../components/FloatProvider'
+import { useAuth } from '../components/AuthProvider'
 import Header from '../components/Header'
 import TaskRow from '../components/TaskRow'
 import BottomInput from '../components/BottomInput'
@@ -22,6 +23,7 @@ export default function Checklist() {
   const now = useNow(1000)
   const nav = useNavigate()
   const float = useFloat()
+  const auth = useAuth()
 
   const pending = listPending()
   const resolved = listResolvedToday()
@@ -57,7 +59,7 @@ export default function Checklist() {
               <PictureInPicture2 size={20} />
             </button>
             <button
-              onClick={() => nav('/new')}
+              onClick={() => nav(auth.isLoggedIn ? '/new' : '/login')}
               aria-label="할 일 추가"
               className="grid h-9 w-9 place-items-center rounded-full text-ink transition active:bg-fill"
             >
@@ -103,7 +105,7 @@ export default function Checklist() {
         {!isLoaded() ? (
           <div className="px-4 py-16 text-center text-[13px] text-sub">불러오는 중…</div>
         ) : pending.length === 0 && resolved.length === 0 ? (
-          <Empty />
+          <Empty loggedIn={auth.isLoggedIn} />
         ) : (
           <div className="py-1">
             {pending.map(({ occ, task }) => (
@@ -134,7 +136,20 @@ export default function Checklist() {
         )}
       </div>
 
-      <BottomInput onSubmit={quickAdd} />
+      {auth.isLoggedIn ? (
+        <BottomInput onSubmit={quickAdd} />
+      ) : (
+        <button
+          onClick={() => nav('/login')}
+          className="sticky bottom-0 flex items-center justify-center gap-2 border-t border-line bg-white px-4 py-3 text-[15px] font-semibold text-white"
+          style={{
+            background: 'var(--color-flame)',
+            paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+          }}
+        >
+          로그인하고 메모 작성하기
+        </button>
+      )}
     </>
   )
 }
@@ -149,13 +164,22 @@ export function maybeAskNotify() {
   }
 }
 
-function Empty() {
+function Empty({ loggedIn }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-20 text-center">
       <p className="text-[15px] font-medium text-ink">아직 폭탄이 없어요</p>
       <p className="text-[13px] leading-relaxed text-sub">
-        아래 입력창에 할 일을 적으면
-        <br />첫 폭탄이 만들어집니다.
+        {loggedIn ? (
+          <>
+            아래 입력창에 할 일을 적으면
+            <br />첫 폭탄이 만들어집니다.
+          </>
+        ) : (
+          <>
+            로그인하면 할 일을 적을 수 있어요.
+            <br />아래 버튼으로 시작하세요.
+          </>
+        )}
       </p>
     </div>
   )

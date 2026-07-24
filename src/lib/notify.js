@@ -21,6 +21,6 @@ export function boomSoon(content) {
   })
   n.onclick = () => {
     window.focus()
-    location.href = '/'
+    location.href = `${import.meta.env.BASE_URL}app` // 알림 클릭 → 붐잇 앱
   }
 }

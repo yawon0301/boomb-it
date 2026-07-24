@@ -8,6 +8,8 @@ import { useNow, useStore } from './lib/hooks'
 import FloatProvider from './components/FloatProvider'
 import FloatContent from './components/FloatContent'
 import Shell from './components/Shell'
+import Landing from './pages/Landing'
+import Login from './pages/Login'
 import Checklist from './pages/Checklist'
 import NewTask from './pages/NewTask'
 import TaskDetail from './pages/TaskDetail'
@@ -58,11 +60,13 @@ export default function App() {
     <FloatProvider>
       <NotifyWatcher />
       <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
         <Route element={<Shell />}>
-          <Route index element={<Checklist />} />
-          <Route path="new" element={<NewTask />} />
-          <Route path="task/:id" element={<TaskDetail />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="/app" element={<Checklist />} />
+          <Route path="/new" element={<NewTask />} />
+          <Route path="/task/:id" element={<TaskDetail />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route
           path="/float"
