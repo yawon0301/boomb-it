@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* 지침서 3-1 색 토큰 — Tailwind v4 @theme */
+@theme {
+  --font-sans: "Pretendard Variable", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+
+  /* 폭탄 몸통 — 기획서 B-2 색 흐름 (흰 → 살구 → 붉음 → 그을음) */
+  --color-bomb-white: #ffffff;
+  --color-bomb-peach: #f6d9c6;
+  --color-bomb-red: #de8877;
+  --color-bomb-soot: #b8b8b8;
+
+  /* 액센트 — 심지 불꽃 */
+  --color-flame: #ff9500;
+  --color-flame-soft: #fff3e0;
+
+  /* 중립 */
+  --color-ink: #1f1f1f;
+  --color-sub: #737373;
+  --color-line: #dbdbdb;
+  --color-fill: #efefef;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+/* 데스크톱: 가운데 앱 카드가 떠 보이도록 페이지 배경은 중립 톤 */
+body {
+  background: #ececed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 카운트다운 숫자 떨림 방지 (지침서 함정 6) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 임박(빨간) 폭탄 — 3분(180s) 주기로 앞부분 ~0.55초만 부르르 떨림 */
+@keyframes bombShake {
+  0% { transform: rotate(0) translateX(0); }
+  0.05% { transform: rotate(-7deg) translateX(-2px); }
+  0.1% { transform: rotate(6deg) translateX(2px); }
+  0.15% { transform: rotate(-6deg) translateX(-2px); }
+  0.2% { transform: rotate(5deg) translateX(1px); }
+  0.25% { transform: rotate(-3deg) translateX(-1px); }
+  0.3%, 100% { transform: rotate(0) translateX(0); }
+}
+.bomb-shake {
+  transform-origin: 50% 60%;
+  animation: bombShake 180s linear infinite;
+}
+
+/* 폭발 직전 10초 — 계속 부르르 진동 */
+@keyframes bombVibrate {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-1.5px, 1px) rotate(-4deg); }
+  40% { transform: translate(1.5px, -1px) rotate(4deg); }
+  60% { transform: translate(-1px, -1px) rotate(-3deg); }
+  80% { transform: translate(1px, 1px) rotate(3deg); }
+}
+.bomb-vibrate {
+  transform-origin: 50% 60%;
+  animation: bombVibrate 0.12s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bomb-shake,
+  .bomb-vibrate { animation: none; }
+}
