@@ -23,14 +23,14 @@ export default function TaskDetail() {
     )
   }
 
-  function submit(data) {
-    updateTask(task.id, data)
+  async function submit(data) {
+    await updateTask(task.id, data)
     nav('/')
   }
 
-  function remove() {
+  async function remove() {
     if (confirm('이 할 일을 완전히 삭제할까요?')) {
-      deleteTask(task.id)
+      await deleteTask(task.id)
       nav('/')
     }
   }

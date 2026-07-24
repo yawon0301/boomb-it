@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { ensureDailyOccurrences, listPending } from './lib/store'
+import { initStore, listPending } from './lib/store'
 import { remainingMs } from './lib/time'
 import { boomSoon } from './lib/notify'
 import { playBoom } from './lib/sound'
@@ -49,9 +49,9 @@ function NotifyWatcher() {
 }
 
 export default function App() {
-  // 앱 진입 시 반복 발생 생성 (기획서 5-4)
+  // 앱 진입 시 Supabase 데이터 로드 + 반복 발생 생성 (기획서 5-4)
   useEffect(() => {
-    ensureDailyOccurrences()
+    initStore()
   }, [])
 
   return (

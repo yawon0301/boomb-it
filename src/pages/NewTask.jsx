@@ -8,8 +8,8 @@ import { maybeAskNotify } from './Checklist'
 export default function NewTask() {
   const nav = useNavigate()
 
-  function submit(data) {
-    createTask(data)
+  async function submit(data) {
+    await createTask(data)
     // 첫 할 일 저장 직후에만 알림 권한을 묻는 지점 (지침서 5-3)
     maybeAskNotify()
     nav('/')

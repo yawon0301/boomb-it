@@ -8,6 +8,7 @@ import {
   createTask,
   getSettings,
   setSettings,
+  isLoaded,
 } from '../lib/store'
 import { askPermission, permissionState } from '../lib/notify'
 import { unlockAudio } from '../lib/sound'
@@ -26,11 +27,11 @@ export default function Checklist() {
   const resolved = listResolvedToday()
 
   // 빠른 추가 — 기본: 폭탄 모드, 1시간 뒤 마감, 타이머 30분
-  function quickAdd(content) {
+  async function quickAdd(content) {
     const due = new Date(Date.now() + 60 * 60000)
     const hh = String(due.getHours()).padStart(2, '0')
     const mm = String(due.getMinutes()).padStart(2, '0')
-    createTask({
+    await createTask({
       content,
       due_time: `${hh}:${mm}`,
       repeat_rule: 'none',
@@ -99,7 +100,9 @@ export default function Checklist() {
           <p className="px-4 py-2 text-[12px] text-sub">{float.error}</p>
         )}
 
-        {pending.length === 0 && resolved.length === 0 ? (
+        {!isLoaded() ? (
+          <div className="px-4 py-16 text-center text-[13px] text-sub">불러오는 중…</div>
+        ) : pending.length === 0 && resolved.length === 0 ? (
           <Empty />
         ) : (
           <div className="py-1">
