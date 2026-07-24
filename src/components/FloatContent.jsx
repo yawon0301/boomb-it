@@ -1,7 +1,7 @@
 // 떠 있는 창 내용 (지침서 3-3) — 원래 크기(460×300)
 // 적어둔 모든 메모를 '같은 크기 타일'로 배치하고, 타일마다 실시간 진행 링(TimerRing).
 import { useState } from 'react'
-import { useStore, useNow } from '../lib/hooks'
+import { useStore, useNowIn } from '../lib/hooks'
 import { listPending, markDone, release, postpone } from '../lib/store'
 import { bombState, remainingMs, formatClock, humanDur, humanElapsed } from '../lib/time'
 import Bomb from './Bomb'
@@ -9,14 +9,15 @@ import TimerRing from './TimerRing'
 import ActionButtons from './ActionButtons'
 import PostponeSheet from './PostponeSheet'
 
-export default function FloatContent() {
+// win: 떠 있는 창(PiP). 그 창의 타이머로 갱신해 백그라운드 스로틀을 피한다.
+export default function FloatContent({ win }) {
   useStore()
-  const now = useNow(1000)
+  const now = useNowIn(win, 1000)
   const [postponing, setPostponing] = useState(null) // occId
   const pending = listPending()
 
   if (pending.length === 0) {
-    return <Waiting />
+    return <Waiting win={win} />
   }
 
   // 급한 순서로: 터짐 → 진행 중(마감 이른 순) → 평화
@@ -99,9 +100,9 @@ function Tile({ occ, task, now, onPostpone }) {
   )
 }
 
-function Waiting() {
+function Waiting({ win }) {
   useStore()
-  const now = useNow(1000)
+  const now = useNowIn(win, 1000)
   const pending = listPending()
   const next = pending
     .filter((p) => p.task.mode === 'bomb')

@@ -49,7 +49,7 @@ export default function FloatProvider({ children }) {
       value={{ floating: !!pipWindow, open, close, supported: pipSupported(), error }}
     >
       {children}
-      {pipWindow && createPortal(<FloatContent />, pipWindow.document.body)}
+      {pipWindow && createPortal(<FloatContent win={pipWindow} />, pipWindow.document.body)}
     </FloatCtx.Provider>
   )
 }
