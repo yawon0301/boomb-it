@@ -4,13 +4,15 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
-import { fetchAdminDashboard } from '../lib/admin'
+import { fetchAdminDashboard, fetchAdminUsers } from '../lib/admin'
 import { fmtDateTime } from '../lib/time'
 import Header from '../components/Header'
 
+const PAGE = 10 // 더보기 한 번에 가져올 인원
 const STATUS_LABEL = { pending: '대기', done: '완료', released: '놓아줌' }
 const PROVIDER_LABEL = { kakao: '카카오', anonymous: '익명', email: '이메일' }
 const nfmt = (n) => Number(n ?? 0).toLocaleString('ko-KR')
+const shortId = (id) => (id ? '…' + String(id).split('-').pop() : '—')
 
 export default function Admin() {
   const auth = useAuth()
@@ -53,13 +55,16 @@ function Dashboard({ d }) {
   const actions = done + released + postpone
   const pct = (n) => (actions ? Math.round((n / actions) * 100) : 0)
 
+  const realCount = d.real_users ?? 0
+  const anonCount = Math.max(0, (d.total_users ?? 0) - realCount)
+
   return (
     <div className="space-y-6">
       {/* 가입/할 일 규모 */}
       <section className="grid grid-cols-2 gap-2">
         <Tile
           label="실 가입자"
-          value={nfmt(d.real_users)}
+          value={nfmt(realCount)}
           sub="카카오 로그인"
           accent="var(--color-flame)"
         />
@@ -83,49 +88,11 @@ function Dashboard({ d }) {
         </div>
       </section>
 
-      {/* 가입자 명단 */}
-      <section>
-        <h2 className="mb-2 text-[13px] font-semibold text-sub">
-          가입자 명단 {d.users ? `(${nfmt(d.users.length)}명)` : ''}
-        </h2>
-        <div className="overflow-x-auto rounded-2xl border border-line">
-          <table className="w-full border-collapse text-[13px]">
-            <thead>
-              <tr className="border-b border-line text-left text-sub">
-                <th className="px-3 py-2 font-medium">닉네임 / 이메일</th>
-                <th className="px-3 py-2 font-medium">수단</th>
-                <th className="px-3 py-2 font-medium">가입일</th>
-                <th className="px-3 py-2 font-medium">최근 로그인</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(d.users ?? []).map((u, i) => (
-                <tr key={i} className="border-b border-line/60 last:border-0">
-                  <td className="max-w-[40vw] truncate px-3 py-2 text-ink">
-                    {u.nickname || u.email || '(이름 없음)'}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-sub">
-                    {PROVIDER_LABEL[u.provider] ?? u.provider}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
-                    {fmtDateTime(u.created_at)}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
-                    {u.last_sign_in_at ? fmtDateTime(u.last_sign_in_at) : '—'}
-                  </td>
-                </tr>
-              ))}
-              {(d.users ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-sub">
-                    가입자가 없습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {/* 가입 사용자 명단 (익명 제외) */}
+      <UserTable kind="real" title="가입 사용자" total={realCount} />
+
+      {/* 익명 사용자 명단 */}
+      <UserTable kind="anon" title="익명 사용자" total={anonCount} />
 
       {/* 최근 등록 20개 */}
       <section>
@@ -167,6 +134,116 @@ function Dashboard({ d }) {
         </div>
       </section>
     </div>
+  )
+}
+
+// 사용자 명단 — 더보기 누를 때마다 서버에서 다음 PAGE명을 추가로 fetch
+function UserTable({ kind, title, total }) {
+  const isAnon = kind === 'anon'
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function loadMore(offset) {
+    setLoading(true)
+    setErr('')
+    try {
+      const page = await fetchAdminUsers(isAnon, offset, PAGE)
+      setRows((prev) => [...prev, ...page])
+    } catch (e) {
+      setErr(e?.message || '명단을 불러오지 못했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadMore(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const hasMore = rows.length < total
+  const remaining = Math.max(0, total - rows.length)
+
+  return (
+    <section>
+      <h2 className="mb-2 text-[13px] font-semibold text-sub">
+        {title} ({nfmt(total)}명)
+      </h2>
+      <div className="overflow-x-auto rounded-2xl border border-line">
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr className="border-b border-line text-left text-sub">
+              {isAnon ? (
+                <>
+                  <th className="px-3 py-2 font-medium">임시 ID</th>
+                  <th className="px-3 py-2 font-medium">처음 접속</th>
+                  <th className="px-3 py-2 font-medium">최근 접속</th>
+                </>
+              ) : (
+                <>
+                  <th className="px-3 py-2 font-medium">닉네임 / 이메일</th>
+                  <th className="px-3 py-2 font-medium">수단</th>
+                  <th className="px-3 py-2 font-medium">가입일</th>
+                  <th className="px-3 py-2 font-medium">최근 로그인</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((u, i) =>
+              isAnon ? (
+                <tr key={i} className="border-b border-line/60 last:border-0">
+                  <td className="whitespace-nowrap px-3 py-2 font-mono tabular-nums text-ink">
+                    {shortId(u.id)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {fmtDateTime(u.created_at)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {u.last_sign_in_at ? fmtDateTime(u.last_sign_in_at) : '—'}
+                  </td>
+                </tr>
+              ) : (
+                <tr key={i} className="border-b border-line/60 last:border-0">
+                  <td className="max-w-[40vw] truncate px-3 py-2 text-ink">
+                    {u.nickname || u.email || '(이름 없음)'}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sub">
+                    {PROVIDER_LABEL[u.provider] ?? u.provider}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {fmtDateTime(u.created_at)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {u.last_sign_in_at ? fmtDateTime(u.last_sign_in_at) : '—'}
+                  </td>
+                </tr>
+              ),
+            )}
+            {rows.length === 0 && !loading && (
+              <tr>
+                <td colSpan={isAnon ? 3 : 4} className="px-3 py-8 text-center text-sub">
+                  {isAnon ? '익명 사용자가 없습니다.' : '가입 사용자가 없습니다.'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {err && <p className="mt-2 text-[12px] text-sub">{err}</p>}
+
+      {hasMore && (
+        <button
+          onClick={() => loadMore(rows.length)}
+          disabled={loading}
+          className="mt-2 w-full rounded-xl border border-line bg-fill py-2 text-[13px] font-medium text-sub transition active:scale-[.99] disabled:opacity-60"
+        >
+          {loading ? '불러오는 중…' : `더보기 (남은 ${nfmt(remaining)}명)`}
+        </button>
+      )}
+    </section>
   )
 }
 

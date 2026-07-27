@@ -38,27 +38,6 @@ begin
     'done_count',     (select count(*) from public.occurrence where status = 'done'),
     'released_count', (select count(*) from public.occurrence where status = 'released'),
     'postpone_count', (select coalesce(sum(postpone_count), 0) from public.occurrence),
-    'users',          (
-      select coalesce(jsonb_agg(us order by us.created_at desc), '[]'::jsonb)
-      from (
-        select
-          u.created_at,
-          u.email,
-          u.last_sign_in_at,
-          case when u.is_anonymous then 'anonymous'
-               else coalesce(u.raw_app_meta_data->>'provider', 'email') end as provider,
-          coalesce(
-            u.raw_user_meta_data->>'nickname',
-            u.raw_user_meta_data->>'name',
-            u.raw_user_meta_data->>'full_name',
-            u.raw_user_meta_data->>'user_name',
-            u.raw_user_meta_data->>'preferred_username'
-          ) as nickname
-        from auth.users u
-        order by u.created_at desc
-        limit 200
-      ) us
-    ),
     'recent_tasks',   (
       select coalesce(jsonb_agg(r order by r.created_at desc), '[]'::jsonb)
       from (
@@ -86,3 +65,53 @@ end;
 $$;
 
 grant execute on function public.admin_dashboard() to authenticated;
+
+-- 3) 사용자 명단 페이지네이션 — '더보기'가 호출할 때마다 다음 페이지를 반환.
+--    p_anon=false: 가입 사용자 / true: 익명 사용자. 최근 가입순(created_at desc).
+create or replace function public.admin_users(
+  p_anon   boolean,
+  p_offset int default 0,
+  p_limit  int default 10
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_admin uuid := '095d57ed-60e5-4d28-bb48-72183f0763a5';
+  result  jsonb;
+begin
+  if auth.uid() is null or auth.uid() <> v_admin then
+    raise exception 'not authorized';
+  end if;
+
+  select coalesce(jsonb_agg(us order by us.created_at desc), '[]'::jsonb)
+  into result
+  from (
+    select
+      u.id,
+      u.created_at,
+      u.email,
+      u.last_sign_in_at,
+      case when u.is_anonymous then 'anonymous'
+           else coalesce(u.raw_app_meta_data->>'provider', 'email') end as provider,
+      coalesce(
+        u.raw_user_meta_data->>'nickname',
+        u.raw_user_meta_data->>'name',
+        u.raw_user_meta_data->>'full_name',
+        u.raw_user_meta_data->>'user_name',
+        u.raw_user_meta_data->>'preferred_username'
+      ) as nickname
+    from auth.users u
+    where u.is_anonymous = p_anon
+    order by u.created_at desc
+    offset greatest(p_offset, 0)
+    limit least(greatest(p_limit, 1), 100)
+  ) us;
+
+  return result;
+end;
+$$;
+
+grant execute on function public.admin_users(boolean, int, int) to authenticated;
