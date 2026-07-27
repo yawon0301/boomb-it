@@ -33,6 +33,11 @@ export default function FloatContent({ win }) {
   }
   const items = [...pending].sort((a, b) => rank(a) - rank(b))
 
+  // 메모 수에 맞춰 캔버스를 채움: 적으면 크게(열 1~2), 많으면 스크롤
+  const cols = items.length <= 1 ? 1 : 2
+  const big = items.length <= 1
+  const ring = items.length <= 1 ? 148 : items.length === 2 ? 120 : 92
+
   return (
     <div className="grid h-full w-full place-items-center overflow-hidden bg-white">
       {/* 고정 크기 캔버스 — 내용/레이아웃은 그대로, 창 크기에 맞춰 scale만 적용 */}
@@ -49,21 +54,24 @@ export default function FloatContent({ win }) {
           <Waiting win={win} />
         ) : (
           <>
-            <div className="h-full w-full overflow-auto bg-white p-2">
-              <div
-                className="flex flex-wrap content-center justify-center gap-2"
-                style={{ minHeight: '100%' }}
-              >
-                {items.map(({ occ, task }) => (
-                  <Tile
-                    key={occ.id}
-                    occ={occ}
-                    task={task}
-                    now={now}
-                    onPostpone={() => setPostponing(occ.id)}
-                  />
-                ))}
-              </div>
+            <div
+              className="grid h-full w-full gap-2 overflow-auto bg-white p-2"
+              style={{
+                gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                gridAutoRows: 'minmax(120px, 1fr)',
+              }}
+            >
+              {items.map(({ occ, task }) => (
+                <Tile
+                  key={occ.id}
+                  occ={occ}
+                  task={task}
+                  now={now}
+                  ring={ring}
+                  big={big}
+                  onPostpone={() => setPostponing(occ.id)}
+                />
+              ))}
             </div>
 
             {postponing != null && (
@@ -82,8 +90,9 @@ export default function FloatContent({ win }) {
   )
 }
 
-// 메모 타일 — 모두 같은 크기. 실시간 링 + 제목 + 시간 (터짐·평화는 버튼)
-function Tile({ occ, task, now, onPostpone }) {
+// 메모 타일 — 셀을 꽉 채움. 실시간 링 + 제목 + 시간 (터짐·평화는 버튼)
+// ring: 링/캐릭터 지름(px) · big: 단일 메모일 때 글자·버튼을 크게
+function Tile({ occ, task, now, onPostpone, ring = 92, big = false }) {
   const peace = task.mode === 'peace'
   const rem = remainingMs(occ, now)
   const exploded = task.mode === 'bomb' && rem <= 0
@@ -92,25 +101,29 @@ function Tile({ occ, task, now, onPostpone }) {
   const resolvable = exploded || peace
 
   return (
-    <div className="flex w-[138px] flex-col items-center gap-1 rounded-2xl p-1.5 text-center ring-1 ring-line/50">
+    <div className="flex h-full w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl p-2 text-center ring-1 ring-line/50">
       {peace ? (
-        <div className="grid h-[92px] w-[92px] place-items-center">
-          <Bomb state="peace" size={72} />
+        <div className="grid shrink-0 place-items-center" style={{ height: ring, width: ring }}>
+          <Bomb state="peace" size={Math.round(ring * 0.78)} />
         </div>
       ) : (
         <TimerRing
           startAt={new Date(occ.bomb_starts_at).getTime()}
           endAt={new Date(occ.scheduled_at).getTime()}
           state={state}
-          size={92}
+          size={ring}
           vibrate={finalCountdown}
         />
       )}
 
-      <p className="line-clamp-1 w-full text-[13px] font-semibold text-ink">{task.content}</p>
+      <p
+        className={`line-clamp-1 w-full font-semibold text-ink ${big ? 'text-[16px]' : 'text-[13px]'}`}
+      >
+        {task.content}
+      </p>
 
       <p
-        className="text-[12px] font-medium tabular-nums"
+        className={`font-medium tabular-nums ${big ? 'text-[14px]' : 'text-[12px]'}`}
         style={{ color: exploded ? '#7a2f26' : finalCountdown ? 'var(--color-flame)' : 'var(--color-sub)' }}
       >
         {peace ? '평화 모드' : exploded ? humanElapsed(occ, now) : `${formatClock(rem)} 남음`}
@@ -118,7 +131,7 @@ function Tile({ occ, task, now, onPostpone }) {
 
       {resolvable && (
         <ActionButtons
-          size="sm"
+          size={big ? 'md' : 'sm'}
           onDone={() => markDone(occ.id)}
           onRelease={() => release(occ.id)}
           onPostpone={peace ? null : onPostpone}
