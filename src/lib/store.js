@@ -397,6 +397,19 @@ export function deletePostponed(index) {
   bump()
 }
 
+// ── 관리자 깔때기용 이벤트 기록 ───────────────────────────────
+// 사용자당 event 1회만 남김(테이블 PK (user_id,event)로 중복 무시). 실패는 조용히.
+export async function recordEvent(event) {
+  if (!supabase || !userId) return
+  try {
+    await supabase
+      .from('user_event')
+      .upsert({ user_id: userId, event }, { onConflict: 'user_id,event', ignoreDuplicates: true })
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── 반복 발생 생성 (기획서 5-4) — 로드 시 1회 ─────────────────
 export async function ensureDailyOccurrences() {
   if (!supabase || !userId) return

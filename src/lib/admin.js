@@ -16,6 +16,14 @@ export async function fetchAdminDashboard() {
   return data
 }
 
+// 전환 깔때기 — 단계별 사람 수(가입/익명)
+export async function fetchAdminFunnel() {
+  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.')
+  const { data, error } = await supabase.rpc('admin_funnel')
+  if (error) throw error
+  return data
+}
+
 // 사용자 명단 페이지네이션 — '더보기'가 누를 때마다 다음 페이지를 서버에서 가져옴.
 // anon=false: 가입 사용자 / true: 익명 사용자. 최근 가입순.
 export async function fetchAdminUsers(anon, offset = 0, limit = 10) {

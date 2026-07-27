@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { createPortal } from 'react-dom'
 import { openFloat, pipSupported } from '../lib/pip'
 import { unlockAudio } from '../lib/sound'
+import { recordEvent } from '../lib/store'
 import FloatContent from './FloatContent'
 
 const FloatCtx = createContext(null)
@@ -27,6 +28,7 @@ export default function FloatProvider({ children }) {
       const pip = await openFloat()
       pip.addEventListener('pagehide', () => setPipWindow(null))
       setPipWindow(pip)
+      recordEvent('pip_open') // 실제로 PiP가 열린 경우만 기록 (관리자 깔때기 3단계)
     } catch (e) {
       setError(e.message || '떠 있는 창을 열 수 없습니다')
     } finally {

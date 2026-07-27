@@ -115,3 +115,89 @@ end;
 $$;
 
 grant execute on function public.admin_users(boolean, int, int) to authenticated;
+
+-- 4) 깔때기용 사용자 이벤트 테이블 (사용자당 event 1회 — PK로 중복 방지)
+create table if not exists public.user_event (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  event      text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, event)
+);
+alter table public.user_event enable row level security;
+drop policy if exists own_event on public.user_event;
+create policy own_event on public.user_event
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- 5) 전환 깔때기 — 단계별 '사람 수'(distinct user)를 가입/익명으로 나눠 반환.
+--    1 방문 · 2 할일1개+ · 3 PiP실제열림 · 4 폭발도달(미루기·삭제없이) · 5 완료 · 6 두번째할일
+create or replace function public.admin_funnel()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_admin uuid := '095d57ed-60e5-4d28-bb48-72183f0763a5';
+  result  jsonb;
+begin
+  if auth.uid() is null or auth.uid() <> v_admin then
+    raise exception 'not authorized';
+  end if;
+
+  with ta as (
+    select user_id, count(*) as c from public.task group by user_id
+  ),
+  pip as (
+    select distinct user_id from public.user_event where event = 'pip_open'
+  ),
+  boom as (
+    select distinct o.user_id
+    from public.occurrence o
+    join public.task t on t.id = o.task_id
+    where t.mode = 'bomb'
+      and coalesce(o.postpone_count, 0) = 0            -- 미룬 적 없음
+      and o.scheduled_at <= now()                      -- 예정시각 지남 = 폭발
+      and (o.responded_at is null or o.responded_at >= o.scheduled_at)  -- 폭발 전 완료가 아님
+  ),
+  dn as (
+    select distinct user_id from public.occurrence where status = 'done'
+  ),
+  pu as (
+    select
+      u.is_anonymous                as anon,
+      (coalesce(ta.c, 0) >= 1)      as s2,
+      (p.user_id is not null)       as s3,
+      (b.user_id is not null)       as s4,
+      (d.user_id is not null)       as s5,
+      (coalesce(ta.c, 0) >= 2)      as s6
+    from auth.users u
+    left join ta   on ta.user_id = u.id
+    left join pip  p on p.user_id = u.id
+    left join boom b on b.user_id = u.id
+    left join dn   d on d.user_id = u.id
+  )
+  select jsonb_build_object(
+    'real', jsonb_build_object(
+      'visited', count(*) filter (where not anon),
+      'task',    count(*) filter (where not anon and s2),
+      'pip',     count(*) filter (where not anon and s3),
+      'boom',    count(*) filter (where not anon and s4),
+      'done',    count(*) filter (where not anon and s5),
+      'second',  count(*) filter (where not anon and s6)
+    ),
+    'anon', jsonb_build_object(
+      'visited', count(*) filter (where anon),
+      'task',    count(*) filter (where anon and s2),
+      'pip',     count(*) filter (where anon and s3),
+      'boom',    count(*) filter (where anon and s4),
+      'done',    count(*) filter (where anon and s5),
+      'second',  count(*) filter (where anon and s6)
+    )
+  ) into result
+  from pu;
+
+  return result;
+end;
+$$;
+
+grant execute on function public.admin_funnel() to authenticated;

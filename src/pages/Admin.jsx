@@ -4,11 +4,19 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
-import { fetchAdminDashboard, fetchAdminUsers } from '../lib/admin'
+import { fetchAdminDashboard, fetchAdminUsers, fetchAdminFunnel } from '../lib/admin'
 import { fmtDateTime } from '../lib/time'
 import Header from '../components/Header'
 
 const PAGE = 10 // 더보기 한 번에 가져올 인원
+const FUNNEL_STAGES = [
+  { key: 'visited', label: '1. 사이트 방문' },
+  { key: 'task', label: '2. 할 일 1개+ 등록' },
+  { key: 'pip', label: '3. 폭탄 창(PiP) 띄움' },
+  { key: 'boom', label: '4. 폭발 도달 (미루기·삭제 없이)' },
+  { key: 'done', label: '5. 완료 누름' },
+  { key: 'second', label: '6. 두 번째 할 일 등록' },
+]
 const STATUS_LABEL = { pending: '대기', done: '완료', released: '놓아줌' }
 const PROVIDER_LABEL = { kakao: '카카오', anonymous: '익명', email: '이메일' }
 const nfmt = (n) => Number(n ?? 0).toLocaleString('ko-KR')
@@ -87,6 +95,9 @@ function Dashboard({ d }) {
           />
         </div>
       </section>
+
+      {/* 전환 깔때기 */}
+      <Funnel />
 
       {/* 가입 사용자 명단 (익명 제외) */}
       <UserTable kind="real" title="가입 사용자" total={realCount} />
@@ -242,6 +253,92 @@ function UserTable({ kind, title, total }) {
         >
           {loading ? '불러오는 중…' : `더보기 (남은 ${nfmt(remaining)}명)`}
         </button>
+      )}
+    </section>
+  )
+}
+
+// 열(가입/익명)별 인원·전환율 + 가장 크게 떨어지는 단계 인덱스
+function colStats(col) {
+  const counts = FUNNEL_STAGES.map((s) => col?.[s.key] ?? 0)
+  const conv = counts.map((c, i) => (i === 0 ? null : counts[i - 1] ? c / counts[i - 1] : null))
+  let worstIdx = -1
+  let worstVal = Infinity
+  conv.forEach((v, i) => {
+    if (v !== null && v < worstVal) {
+      worstVal = v
+      worstIdx = i
+    }
+  })
+  return { counts, conv, worstIdx }
+}
+
+function FunnelCell({ count, conv, worst }) {
+  return (
+    <td className="px-3 py-2 text-right align-top">
+      <div className="text-[16px] font-bold tabular-nums text-ink">{nfmt(count)}</div>
+      <div
+        className="text-[12px] tabular-nums"
+        style={{
+          color: worst ? 'var(--color-flame)' : 'var(--color-sub)',
+          fontWeight: worst ? 700 : 400,
+        }}
+      >
+        {conv === null ? '—' : `${Math.round(conv * 100)}%${worst ? ' ↓' : ''}`}
+      </div>
+    </td>
+  )
+}
+
+// 전환 깔때기 — 단계별 사람 수 + 바로 앞 단계 대비 전환율(가입/익명 열 분리)
+function Funnel() {
+  const [d, setD] = useState(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    fetchAdminFunnel()
+      .then(setD)
+      .catch((e) => setErr(e?.message || '깔때기를 불러오지 못했습니다.'))
+  }, [])
+
+  const real = colStats(d?.real)
+  const anon = colStats(d?.anon)
+
+  return (
+    <section>
+      <h2 className="mb-2 text-[13px] font-semibold text-sub">전환 깔때기 (사람 수 · 앞 단계 대비 %)</h2>
+      {err ? (
+        <p className="rounded-xl bg-fill px-3 py-2 text-[13px] text-sub">{err}</p>
+      ) : !d ? (
+        <p className="py-8 text-center text-[13px] text-sub">불러오는 중…</p>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-2xl border border-line">
+            <table className="w-full border-collapse text-[13px]">
+              <thead>
+                <tr className="border-b border-line text-sub">
+                  <th className="px-3 py-2 text-left font-medium">단계</th>
+                  <th className="px-3 py-2 text-right font-medium">가입 사용자</th>
+                  <th className="px-3 py-2 text-right font-medium">익명 사용자</th>
+                </tr>
+              </thead>
+              <tbody>
+                {FUNNEL_STAGES.map((s, i) => (
+                  <tr key={s.key} className="border-b border-line/60 last:border-0">
+                    <td className="px-3 py-2 align-top text-ink">{s.label}</td>
+                    <FunnelCell count={real.counts[i]} conv={real.conv[i]} worst={real.worstIdx === i} />
+                    <FunnelCell count={anon.counts[i]} conv={anon.conv[i]} worst={anon.worstIdx === i} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-sub">
+            · 인원은 사람 수(distinct 사용자). 한 사람이 할 일을 여러 개 등록해도 1명.
+            <br />· 전환율은 바로 앞 단계 대비. 가장 크게 떨어지는 단계는 <span style={{ color: 'var(--color-flame)' }}>주황색 ↓</span>.
+            <br />· 3단계(PiP)는 이 기능 배포 이후부터 집계됩니다(과거분 0). 4단계는 예정시각 경과로 추론합니다.
+          </p>
+        </>
       )}
     </section>
   )
