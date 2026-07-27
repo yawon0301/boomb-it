@@ -36,6 +36,27 @@ begin
     'done_count',     (select count(*) from public.occurrence where status = 'done'),
     'released_count', (select count(*) from public.occurrence where status = 'released'),
     'postpone_count', (select coalesce(sum(postpone_count), 0) from public.occurrence),
+    'users',          (
+      select coalesce(jsonb_agg(us order by us.created_at desc), '[]'::jsonb)
+      from (
+        select
+          u.created_at,
+          u.email,
+          u.last_sign_in_at,
+          case when u.is_anonymous then 'anonymous'
+               else coalesce(u.raw_app_meta_data->>'provider', 'email') end as provider,
+          coalesce(
+            u.raw_user_meta_data->>'nickname',
+            u.raw_user_meta_data->>'name',
+            u.raw_user_meta_data->>'full_name',
+            u.raw_user_meta_data->>'user_name',
+            u.raw_user_meta_data->>'preferred_username'
+          ) as nickname
+        from auth.users u
+        order by u.created_at desc
+        limit 200
+      ) us
+    ),
     'recent_tasks',   (
       select coalesce(jsonb_agg(r order by r.created_at desc), '[]'::jsonb)
       from (

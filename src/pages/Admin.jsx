@@ -9,6 +9,7 @@ import { fmtDateTime } from '../lib/time'
 import Header from '../components/Header'
 
 const STATUS_LABEL = { pending: '대기', done: '완료', released: '놓아줌' }
+const PROVIDER_LABEL = { kakao: '카카오', anonymous: '익명', email: '이메일' }
 const nfmt = (n) => Number(n ?? 0).toLocaleString('ko-KR')
 
 export default function Admin() {
@@ -73,6 +74,50 @@ function Dashboard({ d }) {
             sub={`${pct(postpone)}%`}
             accent="var(--color-flame)"
           />
+        </div>
+      </section>
+
+      {/* 가입자 명단 */}
+      <section>
+        <h2 className="mb-2 text-[13px] font-semibold text-sub">
+          가입자 명단 {d.users ? `(${nfmt(d.users.length)}명)` : ''}
+        </h2>
+        <div className="overflow-x-auto rounded-2xl border border-line">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-line text-left text-sub">
+                <th className="px-3 py-2 font-medium">닉네임 / 이메일</th>
+                <th className="px-3 py-2 font-medium">수단</th>
+                <th className="px-3 py-2 font-medium">가입일</th>
+                <th className="px-3 py-2 font-medium">최근 로그인</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(d.users ?? []).map((u, i) => (
+                <tr key={i} className="border-b border-line/60 last:border-0">
+                  <td className="max-w-[40vw] truncate px-3 py-2 text-ink">
+                    {u.nickname || u.email || '(이름 없음)'}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sub">
+                    {PROVIDER_LABEL[u.provider] ?? u.provider}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {fmtDateTime(u.created_at)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums text-sub">
+                    {u.last_sign_in_at ? fmtDateTime(u.last_sign_in_at) : '—'}
+                  </td>
+                </tr>
+              ))}
+              {(d.users ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-3 py-8 text-center text-sub">
+                    가입자가 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 
