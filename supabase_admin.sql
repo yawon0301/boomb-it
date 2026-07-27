@@ -21,7 +21,7 @@ security definer
 set search_path = public
 as $$
 declare
-  v_admin uuid := '<YOUR-USER-UID>';   -- ← 여기에 내 User UID
+  v_admin uuid := '095d57ed-60e5-4d28-bb48-72183f0763a5';   -- ← 내 User UID
   result  jsonb;
 begin
   if auth.uid() is null or auth.uid() <> v_admin then
