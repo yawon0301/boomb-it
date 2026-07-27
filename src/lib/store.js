@@ -323,6 +323,14 @@ export function release(occId) {
   return respond(occId, 'released')
 }
 
+// 기록에서 한 건 삭제 — 사용자가 직접 삭제할 때만 사라짐 (완료됨/놓아줌)
+export async function deleteOccurrence(occId) {
+  if (!supabase) return
+  await supabase.from('occurrence').delete().eq('id', occId)
+  state.occurrences = state.occurrences.filter((o) => o.id !== occId)
+  bump()
+}
+
 // 미루기 — 새 줄을 만들지 않고 시각만 갱신 (기획서 4-5)
 // 미루면 status가 다시 'pending'이라 DB에 이력이 안 남으므로, 분석용 로그를 로컬에 기록
 export async function postpone(occId, newScheduledAt) {
@@ -367,6 +375,18 @@ export function listPostponed() {
   } catch {
     return []
   }
+}
+// 미루기 기록 한 건 삭제 (localStorage) — 직접 삭제할 때만 사라짐
+export function deletePostponed(index) {
+  try {
+    const log = JSON.parse(localStorage.getItem(POSTPONE_LOG_KEY)) || []
+    if (!Array.isArray(log) || index < 0 || index >= log.length) return
+    log.splice(index, 1)
+    localStorage.setItem(POSTPONE_LOG_KEY, JSON.stringify(log))
+  } catch {
+    /* ignore */
+  }
+  bump()
 }
 
 // ── 반복 발생 생성 (기획서 5-4) — 로드 시 1회 ─────────────────

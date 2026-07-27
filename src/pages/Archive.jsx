@@ -3,9 +3,9 @@
 //  · 미루기: 미룬 메모 + 미룬 날짜·시간 → 새 마감
 //  · 놓아줌: 놓아준 메모 + 놓아준 날짜·시간
 import { useState } from 'react'
-import { Check, Clock, Wind } from 'lucide-react'
+import { Check, Clock, Wind, Trash2 } from 'lucide-react'
 import { useStore } from '../lib/hooks'
-import { listByStatus, listPostponed } from '../lib/store'
+import { listByStatus, listPostponed, deleteOccurrence, deletePostponed } from '../lib/store'
 import { fmtDateTime } from '../lib/time'
 import Header from '../components/Header'
 
@@ -67,6 +67,7 @@ function DoneList() {
           title={task.content}
           when={fmtDateTime(occ.responded_at)}
           strike
+          onDelete={() => deleteOccurrence(occ.id)}
         />
       ))}
     </ul>
@@ -86,6 +87,7 @@ function ReleaseList() {
           badgeColor="var(--color-sub)"
           title={task.content}
           when={fmtDateTime(occ.responded_at)}
+          onDelete={() => deleteOccurrence(occ.id)}
         />
       ))}
     </ul>
@@ -105,13 +107,17 @@ function PostponeList() {
           badgeColor="var(--color-flame)"
           title={e.content || '(제목 없음)'}
           when={`${fmtDateTime(e.postponed_at)} → ${fmtDateTime(e.to)}`}
+          onDelete={() => deletePostponed(i)}
         />
       ))}
     </ul>
   )
 }
 
-function Row({ badge, badgeColor, title, when, strike = false }) {
+function Row({ badge, badgeColor, title, when, strike = false, onDelete }) {
+  function handleDelete() {
+    if (onDelete && confirm('이 기록을 삭제할까요?')) onDelete()
+  }
   return (
     <li className="flex items-center gap-3 px-4 py-3">
       <span
@@ -128,6 +134,15 @@ function Row({ badge, badgeColor, title, when, strike = false }) {
         </span>
         <span className="mt-0.5 block truncate text-[12px] tabular-nums text-sub">{when}</span>
       </span>
+      {onDelete && (
+        <button
+          onClick={handleDelete}
+          aria-label="기록 삭제"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sub transition active:bg-fill"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
     </li>
   )
 }
