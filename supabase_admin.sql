@@ -30,8 +30,10 @@ begin
 
   select jsonb_build_object(
     'total_users',    (select count(*) from auth.users),
+    'real_users',     (select count(*) from auth.users where is_anonymous = false),
     'new_users_7d',   (select count(*) from auth.users
-                        where created_at >= now() - interval '7 days'),
+                        where is_anonymous = false
+                          and created_at >= now() - interval '7 days'),
     'total_tasks',    (select count(*) from public.task),
     'done_count',     (select count(*) from public.occurrence where status = 'done'),
     'released_count', (select count(*) from public.occurrence where status = 'released'),

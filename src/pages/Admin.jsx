@@ -56,9 +56,15 @@ function Dashboard({ d }) {
   return (
     <div className="space-y-6">
       {/* 가입/할 일 규모 */}
-      <section className="grid grid-cols-3 gap-2">
-        <Tile label="전체 가입자" value={nfmt(d.total_users)} />
-        <Tile label="최근 7일 신규" value={nfmt(d.new_users_7d)} />
+      <section className="grid grid-cols-2 gap-2">
+        <Tile
+          label="실 가입자"
+          value={nfmt(d.real_users)}
+          sub="카카오 로그인"
+          accent="var(--color-flame)"
+        />
+        <Tile label="전체 가입자" value={nfmt(d.total_users)} sub="익명 방문 포함" />
+        <Tile label="최근 7일 신규" value={nfmt(d.new_users_7d)} sub="익명 제외" />
         <Tile label="전체 할 일" value={nfmt(d.total_tasks)} />
       </section>
 
