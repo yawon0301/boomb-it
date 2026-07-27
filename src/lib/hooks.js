@@ -11,6 +11,22 @@ export function useNow(intervalMs = 1000) {
   return useNowIn(null, intervalMs)
 }
 
+// 창(PiP 등) 크기 구독 — resize 시 리렌더. win 없으면 현재 window.
+export function useWinSize(win) {
+  const [size, setSize] = useState(() => ({
+    w: win?.innerWidth || 460,
+    h: win?.innerHeight || 300,
+  }))
+  useEffect(() => {
+    const w = win || window
+    const update = () => setSize({ w: w.innerWidth, h: w.innerHeight })
+    update()
+    w.addEventListener('resize', update)
+    return () => w.removeEventListener('resize', update)
+  }, [win])
+  return size
+}
+
 // 지정한 window의 타이머로 갱신.
 // PiP(떠 있는 창)는 항상 보이므로 그 창의 setInterval을 쓰면
 // 메인 탭이 백그라운드로 스로틀돼도 매초 정확히 갱신된다.
