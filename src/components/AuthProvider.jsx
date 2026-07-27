@@ -1,6 +1,7 @@
 // 카카오 로그인 — Supabase Auth (익명 세션 기반, linkIdentity로 데이터 보존)
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, ensureSession, KAKAO_OPTS } from '../lib/supabase'
+import { ADMIN_USER_ID } from '../lib/admin'
 
 const AuthCtx = createContext(null)
 export const useAuth = () => useContext(AuthCtx)
@@ -27,9 +28,13 @@ function pickNickname(user) {
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+  const [ready, setReady] = useState(false) // 최초 인증 판정 완료 여부 (가드용)
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase) {
+      setReady(true)
+      return
+    }
     // 첫 방문 익명 세션 — 비차단
     ensureSession()
 
@@ -40,6 +45,8 @@ export default function AuthProvider({ children }) {
         setUser(data.user ?? null)
       } catch {
         setUser(null)
+      } finally {
+        setReady(true)
       }
     }
     refresh()
@@ -50,6 +57,9 @@ export default function AuthProvider({ children }) {
   // ⚠ linkIdentity 직후 is_anonymous 플래그가 바로 안 바뀌므로
   //   "카카오 identity가 연동됐는지"로 로그인 여부를 판정한다.
   const isLoggedIn = !!user && (user.is_anonymous === false || !!kakaoIdentity(user))
+
+  // 관리자 판별 — ADMIN_USER_ID 와 로그인 UID가 일치할 때만
+  const isAdmin = !!user && !!ADMIN_USER_ID && user.id === ADMIN_USER_ID
 
   // signInWithOAuth: 첫 로그인이면 카카오 계정 생성, 재방문이면 그 계정으로 로그인.
   // (메모 작성이 로그인 뒤에만 되므로 익명 데이터 보존용 linkIdentity가 불필요하고,
@@ -70,6 +80,9 @@ export default function AuthProvider({ children }) {
     <AuthCtx.Provider
       value={{
         isLoggedIn,
+        isAdmin,
+        ready,
+        userId: user?.id ?? null,
         nickname: pickNickname(user),
         loginKakao,
         logout,

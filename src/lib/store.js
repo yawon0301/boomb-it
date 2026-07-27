@@ -349,6 +349,14 @@ export async function postpone(occId, newScheduledAt) {
   }
   await supabase.from('occurrence').update(p).eq('id', occId)
   Object.assign(occ, p)
+  // 미루기 횟수를 서버에도 누적 (관리자 통계용). 컬럼이 아직 없으면(마이그레이션 전)
+  // 조용히 실패시키고 본동작에는 영향을 주지 않는다.
+  const nextCount = (occ.postpone_count ?? 0) + 1
+  const { error } = await supabase
+    .from('occurrence')
+    .update({ postpone_count: nextCount })
+    .eq('id', occId)
+  if (!error) occ.postpone_count = nextCount
   pushPostponeLog({
     content: task?.content ?? '',
     postponed_at: new Date().toISOString(), // 미룬 시각
