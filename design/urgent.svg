@@ -1,0 +1,51 @@
+<svg width="595" height="842" viewBox="0 0 595 842" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="595" height="842" fill="white"/>
+<g filter="url(#filter0_ii_3878_38)">
+<path d="M267.059 273.778C276.5 218.5 334.5 188 351.501 188" stroke="#878787" stroke-width="26" stroke-linecap="round"/>
+</g>
+<g filter="url(#filter1_ii_3878_38)">
+<path d="M307 265C312.523 265 317 269.477 317 275V284.476C375.822 305.11 418 361.129 418 427C418 510.395 350.395 578 267 578C183.605 578 116 510.395 116 427C116 361.129 158.178 305.11 217 284.476V275C217 269.477 221.477 265 227 265H307Z" fill="#FFB2A1"/>
+</g>
+<ellipse cx="190" cy="404" rx="10" ry="7" fill="#747474"/>
+<ellipse cx="342.5" cy="403" rx="7.5" ry="8" fill="#747474"/>
+<rect x="258" y="510" width="17" height="11" rx="5" fill="#747474"/>
+<rect x="252" y="529" width="30" height="38" rx="13" fill="#747474"/>
+<path d="M168.141 380.657C169.694 377.24 184.832 367.377 192.41 368.227" stroke="#747474" stroke-width="10" stroke-linecap="round"/>
+<path d="M364.371 382.921C361.981 379.763 343.252 369.758 335 369.879" stroke="#747474" stroke-width="10" stroke-linecap="round"/>
+<path d="M326.589 131.449L346.397 151.983L365.52 130.81L369.475 159.065L397.391 153.176L383.983 178.36L410.03 190.004L384.379 202.497L398.607 227.227L370.513 222.257L367.487 250.627L347.679 230.093L328.556 251.266L324.601 223.011L296.685 228.9L310.093 203.717L284.047 192.072L309.697 179.579L295.469 154.849L323.563 159.819L326.589 131.449Z" fill="#E80000"/>
+<path d="M333.894 153.661L346.158 166.375L357.998 153.265L360.447 170.759L377.731 167.113L369.43 182.705L385.556 189.915L369.675 197.65L378.484 212.961L361.089 209.884L359.216 227.449L346.952 214.736L335.112 227.845L332.663 210.351L315.379 213.997L323.681 198.405L307.554 191.196L323.435 183.461L314.626 168.149L332.021 171.226L333.894 153.661Z" fill="#FF6232"/>
+<defs>
+<filter id="filter0_ii_3878_38" x="254.057" y="171" width="110.443" height="119.78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect1_innerShadow_3878_38"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="-4"/>
+<feGaussianBlur stdDeviation="5"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="effect1_innerShadow_3878_38" result="effect2_innerShadow_3878_38"/>
+</filter>
+<filter id="filter1_ii_3878_38" x="116" y="261" width="302" height="321" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="20"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect1_innerShadow_3878_38"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="-4"/>
+<feGaussianBlur stdDeviation="5.35"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="effect1_innerShadow_3878_38" result="effect2_innerShadow_3878_38"/>
+</filter>
+</defs>
+</svg>
