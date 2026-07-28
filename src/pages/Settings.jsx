@@ -7,6 +7,7 @@ import { setSettings, addTestBomb } from '../lib/store'
 import { playBoom, unlockAudio, getBoomVolume, setBoomVolume } from '../lib/sound'
 import { useFloat } from '../components/FloatProvider'
 import { useAuth } from '../components/AuthProvider'
+import { isTossEnv } from '../lib/platform'
 import Header from '../components/Header'
 
 export default function Settings() {
@@ -42,7 +43,8 @@ export default function Settings() {
     <>
       <Header title="설정" back />
       <div className="flex-1 overflow-y-auto px-4 py-5">
-        {/* 계정 — 카카오 로그인 */}
+        {/* 계정 — 카카오 로그인 (토스 웹뷰에선 카카오가 동작하지 않아 숨김 → 익명 전용) */}
+        {!isTossEnv() && (
         <section className="mb-6 rounded-2xl bg-white p-4 ring-1 ring-line">
           <div className="mb-3 flex items-center gap-2 text-ink">
             <MessageSquare size={18} />
@@ -79,6 +81,7 @@ export default function Settings() {
             </>
           )}
         </section>
+        )}
 
         {/* 떠 있게 하기 — 눈에 띄는 곳에 (지침서 5-4 / 6) */}
         <section className="mb-6 rounded-2xl bg-white p-4 ring-1 ring-line">

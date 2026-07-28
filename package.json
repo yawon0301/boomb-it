@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:toss": "VITE_TOSS=1 vite",
+    "build:toss": "VITE_TOSS=1 vite build",
+    "toss:build": "ait build",
+    "toss:deploy": "ait deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

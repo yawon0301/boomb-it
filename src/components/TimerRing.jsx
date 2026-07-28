@@ -4,7 +4,19 @@
 import { memo } from 'react'
 import Bomb from './Bomb'
 
-function TimerRing({ startAt, endAt, progress = 0, state = 'appear', size = 200, vibrate = false }) {
+// bombNudgeX/Y: 폭탄을 링 안에서 가로·세로로 미세 이동(size 대비 비율). 기본 0(데스크톱 그대로).
+//   폭탄 아트는 심지가 위로 뻗고 viewBox가 오른쪽 여백을 둬서 몸통이 좌·하로 치우친다.
+//   모바일에선 살짝 이동해 둥근 몸통 중심을 링 정중앙에 맞춤(값은 아트 좌표에서 계산).
+function TimerRing({
+  startAt,
+  endAt,
+  progress = 0,
+  state = 'appear',
+  size = 200,
+  vibrate = false,
+  bombNudgeX = 0,
+  bombNudgeY = 0,
+}) {
   // size에 비례 (size=200에서 원래 값: 링 160 · 선 5 · 폭탄 120)
   const stroke = Math.max(3, Math.round(size * 0.025))
   const ringD = size * 0.8 // 링 지름
@@ -49,7 +61,14 @@ function TimerRing({ startAt, endAt, progress = 0, state = 'appear', size = 200,
           style={ringStyle}
         />
       </svg>
-      <div className="absolute inset-0 grid place-items-center">
+      <div
+        className="absolute inset-0 grid place-items-center"
+        style={
+          bombNudgeX || bombNudgeY
+            ? { transform: `translate(${bombNudgeX * size}px, ${bombNudgeY * size}px)` }
+            : undefined
+        }
+      >
         <Bomb state={state} size={bomb} vibrate={vibrate} />
       </div>
     </div>

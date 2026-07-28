@@ -218,6 +218,96 @@ export async function createTask(input) {
   bump()
 }
 
+// ── 모바일(토스) 전용 생성 ────────────────────────────────────
+// 타이머 길이 없이 "만든 시점부터" 마감까지 타들어감.
+//  · bomb_starts_at = 생성 시각(created_at 개념) → 표정 단계 = (만든 시각→마감) 비율
+//  · timer_minutes 는 쓰지 않음(null) · 반복 없음(none)
+export async function createTaskMobile(input) {
+  if (!supabase || !userId) return
+  const nowIso = new Date().toISOString()
+  const dstr = input.due_date ?? todayStr()
+  const row = {
+    user_id: userId,
+    content: String(input.content || '').trim().slice(0, 500),
+    due_time: input.due_time,
+    due_date: dstr,
+    repeat_rule: 'none',
+    mode: input.mode ?? 'bomb',
+    timer_minutes: null,
+    is_active: true,
+  }
+  const { data: task, error } = await supabase.from('task').insert(row).select().single()
+  if (error || !task) return
+  state.tasks = [...state.tasks, task]
+  const scheduled = scheduledDateTime(dstr, input.due_time)
+  const { data: occ } = await supabase
+    .from('occurrence')
+    .insert({
+      user_id: userId,
+      task_id: task.id,
+      scheduled_at: scheduled.toISOString(),
+      bomb_starts_at: task.mode === 'peace' ? null : nowIso, // 만든 시점 = 심지 점화
+      status: 'pending',
+      responded_at: null,
+    })
+    .select()
+    .single()
+  if (occ) state.occurrences = [...state.occurrences, occ]
+  bump()
+}
+
+// 모바일 미루기 — bomb_starts_at(만든 시점)은 그대로 두고 마감 시각만 옮긴다.
+// (표정/링은 여전히 만든 시각→새 마감 비율로 계산된다)
+export async function postponeMobile(occId, newScheduledAt) {
+  const occ = state.occurrences.find((o) => o.id === occId)
+  if (!occ || !supabase) return
+  const task = taskOf(occ)
+  const p = {
+    scheduled_at: newScheduledAt.toISOString(),
+    status: 'pending',
+    responded_at: null,
+  }
+  await supabase.from('occurrence').update(p).eq('id', occId)
+  Object.assign(occ, p)
+  pushPostponeLog({
+    content: task?.content ?? '',
+    postponed_at: new Date().toISOString(),
+    to: newScheduledAt.toISOString(),
+  })
+  bump()
+}
+
+// 모바일 수정 — 내용/마감 날짜·시간/모드 변경.
+//  · 폭탄 유지 시 bomb_starts_at(만든 시점)은 그대로 둬서 (만든 시각→마감) 비율 유지
+//  · 평화→폭탄 전환이면 심지 점화 기준을 task.created_at(없으면 지금)으로 잡음
+export async function updateTaskMobile(id, patch) {
+  const task = getTask(id)
+  if (!task || !supabase) return
+  const merged = { ...task, ...patch }
+  const dstr = merged.due_date ?? todayStr()
+  const upd = {
+    content: String(merged.content || '').trim().slice(0, 500),
+    due_time: merged.due_time,
+    due_date: dstr,
+    mode: merged.mode,
+  }
+  await supabase.from('task').update(upd).eq('id', task.id)
+  Object.assign(task, upd)
+
+  const occ = state.occurrences.find((o) => o.task_id === task.id && o.status === 'pending')
+  if (occ) {
+    const sched = scheduledDateTime(dstr, merged.due_time)
+    const bombStart =
+      merged.mode === 'peace'
+        ? null
+        : (occ.bomb_starts_at ?? task.created_at ?? new Date().toISOString())
+    const p = { scheduled_at: sched.toISOString(), bomb_starts_at: bombStart }
+    await supabase.from('occurrence').update(p).eq('id', occ.id)
+    Object.assign(occ, p)
+  }
+  bump()
+}
+
 export async function updateTask(id, patch) {
   const task = getTask(id)
   if (!task || !supabase) return
