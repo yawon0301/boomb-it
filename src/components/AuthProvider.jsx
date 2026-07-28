@@ -61,11 +61,21 @@ export default function AuthProvider({ children }) {
   // 관리자 판별 — ADMIN_USER_ID 와 로그인 UID가 일치할 때만
   const isAdmin = !!user && !!ADMIN_USER_ID && user.id === ADMIN_USER_ID
 
-  // signInWithOAuth: 첫 로그인이면 카카오 계정 생성, 재방문이면 그 계정으로 로그인.
-  // (메모 작성이 로그인 뒤에만 되므로 익명 데이터 보존용 linkIdentity가 불필요하고,
-  //  linkIdentity는 재방문 시 "이미 연동됨" 오류로 로그인 루프를 만든다.)
+  // 카카오 연결(선택) — 익명으로 쓰던 데이터를 보존하며 계정을 잇는다.
+  //  · 익명 세션이면 linkIdentity 로 현재 익명 유저에 카카오를 연동(데이터 유지).
+  //    (linkIdentity 는 일반 웹에서만 동작하므로 실패하면 일반 로그인으로 폴백)
+  //  · 이미 그 카카오가 다른 계정에 연동돼 있으면("이미 연동됨") signInWithOAuth 로
+  //    기존 카카오 계정에 로그인해 루프를 피한다.
   async function loginKakao() {
     if (!supabase) return
+    if (user?.is_anonymous) {
+      try {
+        const { error } = await supabase.auth.linkIdentity(KAKAO_OPTS)
+        if (!error) return // OAuth 리다이렉트로 이어짐
+      } catch {
+        /* 링크 미지원/실패 → 아래 일반 로그인으로 폴백 */
+      }
+    }
     await supabase.auth.signInWithOAuth(KAKAO_OPTS)
   }
 

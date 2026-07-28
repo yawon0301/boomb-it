@@ -7,7 +7,7 @@
 //  · 쓰기: state를 갱신하고 Supabase에 반영 (async)
 //  · 로그인/로그아웃(auth 변경) 시 해당 유저 데이터로 다시 로드
 // ─────────────────────────────────────────────────────────────
-import { supabase } from './supabase'
+import { supabase, ensureSession } from './supabase'
 
 const LEGACY_KEY = 'boomb-it.v1' // 예전 localStorage 데이터
 const MIGRATED_KEY = 'boomb-it.migrated'
@@ -87,9 +87,9 @@ export async function initStore() {
     bump()
     return
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // 로그인 없이 바로 쓸 수 있도록 익명 세션을 먼저 보장한다.
+  // (userId가 처음부터 세팅돼야 첫 메모 저장 시 user_id 누락 없이 기록됨)
+  const user = await ensureSession()
   await loadForUser(user?.id ?? null)
   supabase.auth.onAuthStateChange((_event, session) => {
     const uid = session?.user?.id ?? null

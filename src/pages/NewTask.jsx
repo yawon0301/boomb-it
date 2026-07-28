@@ -1,20 +1,12 @@
-// /new — 할 일 추가 (로그인 필요)
-import { useEffect } from 'react'
+// /new — 할 일 추가 (로그인 없이 익명으로 바로 사용)
 import { useNavigate } from 'react-router-dom'
 import { createTask } from '../lib/store'
-import { useAuth } from '../components/AuthProvider'
 import Header from '../components/Header'
 import TaskForm from '../components/TaskForm'
 import { maybeAskNotify } from './Checklist'
 
 export default function NewTask() {
   const nav = useNavigate()
-  const { isLoggedIn } = useAuth()
-
-  // 메모 작성은 로그인 사용자만 — 아니면 로그인 페이지로
-  useEffect(() => {
-    if (!isLoggedIn) nav('/login', { replace: true })
-  }, [isLoggedIn, nav])
 
   async function submit(data) {
     await createTask(data)
