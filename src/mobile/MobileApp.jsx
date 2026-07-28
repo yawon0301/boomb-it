@@ -1,6 +1,6 @@
 // 토스 웹뷰용 모바일 앱 — 데스크톱 App 과 별개의 라우팅/셸.
 // (같은 Supabase 백엔드·store·폭탄 컴포넌트를 그대로 재사용)
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
 import { initStore, listPending } from '../lib/store'
 import { remainingMs } from '../lib/time'
@@ -39,13 +39,50 @@ function ExplosionWatcher() {
   return null
 }
 
+// 키보드가 올라올 때: 하단 탭은 숨기고, 입력칸만 키보드 위로(카톡처럼).
+//  · iOS(키보드가 화면을 덮는 방식): VisualViewport로 겹침을 감지해 셸 높이를 보이는 영역에 맞춤
+//  · Android(뷰포트가 줄어드는 방식): 100dvh가 이미 줄므로 입력칸이 자연히 키보드 위에 옴
+//  · 입력 포커스(focusin)는 두 기기 공통 신호 → 이때 하단 탭 숨김
 function MobileShell() {
+  const [kbOpen, setKbOpen] = useState(false)
+  const [overlayH, setOverlayH] = useState(null) // iOS 오버레이 키보드일 때 보이는 높이(px)
+
+  useEffect(() => {
+    const isTextInput = (el) =>
+      el && el.matches?.('input:not([type]), input[type=text], input[type=search], textarea')
+    const onFocusIn = (e) => isTextInput(e.target) && setKbOpen(true)
+    const onFocusOut = () => setKbOpen(false)
+    document.addEventListener('focusin', onFocusIn)
+    document.addEventListener('focusout', onFocusOut)
+
+    const vv = window.visualViewport
+    const onResize = () => {
+      if (!vv) return
+      const overlap = window.innerHeight - vv.height - vv.offsetTop
+      setOverlayH(overlap > 120 ? vv.height : null) // 120px 초과 겹침이면 오버레이 키보드로 판단
+    }
+    vv?.addEventListener('resize', onResize)
+    vv?.addEventListener('scroll', onResize)
+    onResize()
+
+    return () => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+      vv?.removeEventListener('resize', onResize)
+      vv?.removeEventListener('scroll', onResize)
+    }
+  }, [])
+
+  const open = kbOpen || overlayH != null
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-[520px] flex-col overflow-hidden bg-white">
+    <div
+      className="mx-auto flex w-full max-w-[520px] flex-col overflow-hidden bg-white"
+      style={{ height: overlayH != null ? `${overlayH}px` : '100dvh' }}
+    >
       <div className="flex min-h-0 flex-1 flex-col">
         <Outlet />
       </div>
-      <MBottomNav />
+      {!open && <MBottomNav />}
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { defineConfig } from '@apps-in-toss/web-framework/config'
 // 붐잇 웹 코드는 그대로 두고, Vite 빌드를 그대로 감싸서 토스 아티팩트를 만듭니다.
 // build 명령에 VITE_TOSS=1 을 주입 → 앱 안에서 카카오 로그인 UI를 숨기고 익명 전용으로 동작.
 export default defineConfig({
-  appName: 'boomb-it', // TODO: 콘솔에 등록한 실제 appName 으로 교체
+  appName: 'boomb-it', // 앱인토스 콘솔 앱과 일치 확인됨
   brand: {
     displayName: '붐잇',
     primaryColor: '#ff9500', // 붐잇 --color-flame
@@ -17,8 +17,8 @@ export default defineConfig({
     host: 'localhost',
     port: 5173,
     commands: {
-      dev: 'VITE_TOSS=1 vite',
-      build: 'VITE_TOSS=1 vite build',
+      dev: 'vite --mode toss',
+      build: 'vite build --mode toss',
     },
   },
   permissions: [],

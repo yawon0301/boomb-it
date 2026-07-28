@@ -5,3 +5,7 @@ dist-ssr
 .env
 .env.*
 .DS_Store
+
+# 앱인토스 배포 아티팩트 / 생성물
+*.ait
+.granite

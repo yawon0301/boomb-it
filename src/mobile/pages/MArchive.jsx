@@ -41,7 +41,14 @@ export default function MArchive() {
       <div className="flex-1 overflow-y-auto">
         {tab === 'done' && <DoneList />}
         {tab === 'postpone' && <PostponeList />}
-        {tab === 'release' && <ReleaseList />}
+        {tab === 'release' && (
+          <>
+            <p className="px-4 pb-1 pt-3 text-[12px] leading-relaxed text-sub">
+              놓아준 기록은 놓아준 지 일주일 뒤 목록에서 자동으로 사라져요.
+            </p>
+            <ReleaseList />
+          </>
+        )}
       </div>
     </>
   )
@@ -68,7 +75,12 @@ function DoneList() {
 }
 
 function ReleaseList() {
-  const items = listByStatus('released')
+  // 놓아준 지 일주일이 지난 항목은 목록에서 숨김(각자 7일 뒤 하나씩 사라짐).
+  // ⚠ DB에서 지우는 게 아니라 화면에서만 숨김 → 관리자 통계엔 그대로 남음.
+  const weekAgo = Date.now() - 7 * 86400000
+  const items = listByStatus('released').filter(
+    ({ occ }) => new Date(occ.responded_at).getTime() >= weekAgo,
+  )
   if (items.length === 0) return <Empty text="아직 놓아준 메모가 없어요." />
   return (
     <ul className="divide-y divide-line/60">

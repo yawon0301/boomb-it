@@ -6,7 +6,7 @@ import { useStore, useNow } from '../../lib/hooks'
 import { listPending, createTaskMobile, deleteTask, isLoaded } from '../../lib/store'
 import { bombState, remainingMs, formatClock, humanElapsed, dueDateClock } from '../../lib/time'
 import TimerRing from '../../components/TimerRing'
-import BottomInput from '../../components/BottomInput'
+import MBottomInput from '../components/MBottomInput'
 import MTaskRow from '../components/MTaskRow'
 import MConfirm from '../components/MConfirm'
 
@@ -88,7 +88,7 @@ export default function MHome() {
         )}
       </div>
 
-      <BottomInput onSubmit={quickAdd} />
+      <MBottomInput onSubmit={quickAdd} />
 
       {confirm && (
         <MConfirm

@@ -7,12 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "dev:toss": "VITE_TOSS=1 vite",
-    "build:toss": "VITE_TOSS=1 vite build",
+    "dev:toss": "vite --mode toss",
+    "build:toss": "vite build --mode toss",
     "toss:build": "ait build",
     "toss:deploy": "ait deploy"
   },
   "dependencies": {
+    "@apps-in-toss/web-framework": "^2.10.7",
     "@supabase/supabase-js": "^2.110.8",
     "lucide-react": "^0.454.0",
     "react": "^18.3.1",
