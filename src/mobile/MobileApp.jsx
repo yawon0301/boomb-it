@@ -2,11 +2,12 @@
 // (같은 Supabase 백엔드·store·폭탄 컴포넌트를 그대로 재사용)
 import { useEffect, useRef, useState } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
-import { initStore, listPending } from '../lib/store'
+import { initStore, listPending, getSettings, setSettings } from '../lib/store'
 import { remainingMs } from '../lib/time'
 import { playBoom } from '../lib/sound'
 import { useNow, useStore } from '../lib/hooks'
 import MBottomNav from './components/MBottomNav'
+import MobileTutorial from './components/MobileTutorial'
 import MHome from './pages/MHome'
 import MStats from './pages/MStats'
 import MNewTask from './pages/MNewTask'
@@ -88,13 +89,22 @@ function MobileShell() {
 }
 
 export default function MobileApp() {
+  // 첫 사용자만 튜토리얼(설정에 tutorialSeen 없을 때). 두 번째부터는 바로 홈.
+  const [showTutorial, setShowTutorial] = useState(() => !getSettings().tutorialSeen)
+
   useEffect(() => {
     initStore()
   }, [])
 
+  function finishTutorial() {
+    setSettings({ tutorialSeen: true })
+    setShowTutorial(false)
+  }
+
   return (
     <>
       <ExplosionWatcher />
+      {showTutorial && <MobileTutorial onDone={finishTutorial} />}
       <Routes>
         <Route element={<MobileShell />}>
           <Route path="/" element={<MHome />} />
