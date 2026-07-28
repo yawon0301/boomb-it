@@ -11,7 +11,8 @@ export default defineConfig({
   brand: {
     displayName: '붐잇',
     primaryColor: '#ff9500', // 붐잇 --color-flame
-    icon: '', // TODO: 콘솔에 등록한 아이콘 URL
+    // 콘솔에 등록한 아이콘과 동일한 이미지 URL (심사 요건).
+    icon: 'https://static.toss.im/appsintoss/63781/01ba0696-60c9-48e8-83e3-5121b86ba351.png',
   },
   web: {
     host: 'localhost',
