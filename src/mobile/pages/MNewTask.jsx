@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { createTaskMobile, todayStr } from '../../lib/store'
+import { DateSelect, TimeSelect } from '../components/MWhen'
 
 function Segmented({ value, onChange, options }) {
   return (
@@ -78,28 +79,12 @@ export default function MNewTask() {
           />
         </Field>
 
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Field label="마감 날짜">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className={inputCls}
-              />
-            </Field>
-          </div>
-          <div className="flex-1">
-            <Field label="마감 시간">
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className={inputCls}
-              />
-            </Field>
-          </div>
-        </div>
+        <Field label="마감 날짜">
+          <DateSelect value={date} onChange={setDate} />
+        </Field>
+        <Field label="마감 시간">
+          <TimeSelect value={time} onChange={setTime} />
+        </Field>
 
         <Field label="모드">
           <Segmented

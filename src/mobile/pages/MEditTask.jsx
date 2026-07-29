@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react'
 import { useStore } from '../../lib/hooks'
 import { getTask, getState, updateTaskMobile, todayStr, dayStr } from '../../lib/store'
 import { dueClock } from '../../lib/time'
+import { DateSelect, TimeSelect } from '../components/MWhen'
 
 function Segmented({ value, onChange, options }) {
   return (
@@ -104,28 +105,12 @@ export default function MEditTask() {
               />
             </Field>
 
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Field label="마감 날짜">
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-              <div className="flex-1">
-                <Field label="마감 시간">
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className={inputCls}
-                  />
-                </Field>
-              </div>
-            </div>
+            <Field label="마감 날짜">
+              <DateSelect value={date} onChange={setDate} />
+            </Field>
+            <Field label="마감 시간">
+              <TimeSelect value={time} onChange={setTime} />
+            </Field>
 
             <Field label="모드">
               <Segmented
