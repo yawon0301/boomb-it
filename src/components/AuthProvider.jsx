@@ -1,4 +1,4 @@
-// 카카오 로그인 — Supabase Auth (익명 세션 기반, linkIdentity로 데이터 보존)
+// 카카오 로그인 — Supabase Auth (익명 세션 기반, signInWithOAuth로 카카오 계정 로그인)
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, ensureSession, KAKAO_OPTS } from '../lib/supabase'
 import { ADMIN_USER_ID } from '../lib/admin'
@@ -61,21 +61,12 @@ export default function AuthProvider({ children }) {
   // 관리자 판별 — ADMIN_USER_ID 와 로그인 UID가 일치할 때만
   const isAdmin = !!user && !!ADMIN_USER_ID && user.id === ADMIN_USER_ID
 
-  // 카카오 연결(선택) — 익명으로 쓰던 데이터를 보존하며 계정을 잇는다.
-  //  · 익명 세션이면 linkIdentity 로 현재 익명 유저에 카카오를 연동(데이터 유지).
-  //    (linkIdentity 는 일반 웹에서만 동작하므로 실패하면 일반 로그인으로 폴백)
-  //  · 이미 그 카카오가 다른 계정에 연동돼 있으면("이미 연동됨") signInWithOAuth 로
-  //    기존 카카오 계정에 로그인해 루프를 피한다.
+  // 카카오 로그인 — signInWithOAuth 로 카카오 계정에 로그인.
+  //  ⚠ linkIdentity(익명→카카오 연동)는 이미 카카오가 연동된 "재방문 사용자"에게
+  //    OAuth 리다이렉트 이후 "이미 연동됨" 오류를 내며 로그인이 깨진다(함수 error로 안 잡힘).
+  //    그래서 안정적인 signInWithOAuth 로 기존 카카오 계정에 바로 로그인한다.
   async function loginKakao() {
     if (!supabase) return
-    if (user?.is_anonymous) {
-      try {
-        const { error } = await supabase.auth.linkIdentity(KAKAO_OPTS)
-        if (!error) return // OAuth 리다이렉트로 이어짐
-      } catch {
-        /* 링크 미지원/실패 → 아래 일반 로그인으로 폴백 */
-      }
-    }
     await supabase.auth.signInWithOAuth(KAKAO_OPTS)
   }
 
