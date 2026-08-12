@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { initStore, listPending } from './lib/store'
 import { remainingMs } from './lib/time'
 import { boomSoon } from './lib/notify'
@@ -82,6 +82,8 @@ export default function App() {
             </div>
           }
         />
+        {/* 매칭 안 되는 경로는 흰 화면 대신 메인으로 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </FloatProvider>
   )

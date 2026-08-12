@@ -1,7 +1,7 @@
 // 토스 웹뷰용 모바일 앱 — 데스크톱 App 과 별개의 라우팅/셸.
 // (같은 Supabase 백엔드·store·폭탄 컴포넌트를 그대로 재사용)
 import { useEffect, useRef, useState } from 'react'
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom'
 import { initStore, listPending, getSettings, setSettings } from '../lib/store'
 import { remainingMs } from '../lib/time'
 import { playBoom } from '../lib/sound'
@@ -115,6 +115,8 @@ export default function MobileApp() {
         <Route path="/new" element={<MNewTask />} />
         <Route path="/task/:id/edit" element={<MEditTask />} />
         <Route path="/task/:id" element={<MTaskDetail />} />
+        {/* 매칭 안 되는 경로(예: /admin)는 흰 화면 대신 메인으로 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   )

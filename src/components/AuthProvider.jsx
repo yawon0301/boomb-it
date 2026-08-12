@@ -38,19 +38,21 @@ export default function AuthProvider({ children }) {
     // 첫 방문 익명 세션 — 비차단
     ensureSession()
 
-    // 항상 getUser()로 최신 유저(identities 포함)를 읽음
-    const refresh = async () => {
-      try {
-        const { data } = await supabase.auth.getUser()
-        setUser(data.user ?? null)
-      } catch {
-        setUser(null)
-      } finally {
-        setReady(true)
-      }
-    }
-    refresh()
-    const { data: sub } = supabase.auth.onAuthStateChange(() => refresh())
+    // 최초 인증 판정(가드 해제)은 초기 세션으로 1회만. getSession 은 콜백 "밖"이라 안전.
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setUser(data.session?.user ?? null))
+      .finally(() => setReady(true))
+
+    // ⚠ onAuthStateChange 콜백 "안"에서 getUser()/getSession() 등 await 호출 금지.
+    //   supabase-js 가 auth 락(navigator.locks)을 콜백이 쥔 채 다시 대기 → 데드락.
+    //   그러면 refresh 의 setReady(true) 가 영영 안 돌아 재방문 카카오(관리자) 세션에서
+    //   ready 가 false 로 굳고 /admin(=!ready 면 null) 이 흰 화면이 된다.
+    //   → 콜백이 넘겨주는 session.user 를 그대로 사용(identities 포함).
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setReady(true)
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
 

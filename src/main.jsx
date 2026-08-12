@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import MobileApp from './mobile/MobileApp.jsx'
 import AuthProvider from './components/AuthProvider.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { isTossEnv } from './lib/platform'
 import './index.css'
 
@@ -25,9 +26,11 @@ if (isTossEnv()) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-      <AuthProvider>
-        <Root />
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 )
