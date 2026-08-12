@@ -24,6 +24,14 @@ export async function fetchAdminFunnel() {
   return data
 }
 
+// 토스앱 익명 방문자 화면 도달 깔때기 — 화면별 '도달한 사람 수'(RLS 우회, 관리자만)
+export async function fetchAdminTossScreens() {
+  if (!supabase) throw new Error('Supabase가 설정되지 않았습니다.')
+  const { data, error } = await supabase.rpc('admin_toss_screens')
+  if (error) throw error
+  return data
+}
+
 // 사용자 명단 페이지네이션 — '더보기'가 누를 때마다 다음 페이지를 서버에서 가져옴.
 // anon=false: 가입 사용자 / true: 익명 사용자. 최근 가입순.
 export async function fetchAdminUsers(anon, offset = 0, limit = 10) {

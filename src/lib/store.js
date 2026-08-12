@@ -490,11 +490,16 @@ export function deletePostponed(index) {
 // ── 관리자 깔때기용 이벤트 기록 ───────────────────────────────
 // 사용자당 event 1회만 남김(테이블 PK (user_id,event)로 중복 무시). 실패는 조용히.
 export async function recordEvent(event) {
-  if (!supabase || !userId) return
+  if (!supabase) return
+  // userId 가 아직 세팅 전이면(예: 앱 진입 직후 화면 추적) 익명 세션을 보장해 유실 방지.
+  // ensureSession 은 메모이즈되어 익명 계정을 중복 생성하지 않는다.
+  let uid = userId
+  if (!uid) uid = (await ensureSession())?.id ?? userId
+  if (!uid) return
   try {
     await supabase
       .from('user_event')
-      .upsert({ user_id: userId, event }, { onConflict: 'user_id,event', ignoreDuplicates: true })
+      .upsert({ user_id: uid, event }, { onConflict: 'user_id,event', ignoreDuplicates: true })
   } catch {
     /* ignore */
   }

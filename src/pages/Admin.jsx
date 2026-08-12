@@ -4,7 +4,12 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
-import { fetchAdminDashboard, fetchAdminUsers, fetchAdminFunnel } from '../lib/admin'
+import {
+  fetchAdminDashboard,
+  fetchAdminUsers,
+  fetchAdminFunnel,
+  fetchAdminTossScreens,
+} from '../lib/admin'
 import { fmtDateTime } from '../lib/time'
 import Header from '../components/Header'
 
@@ -98,6 +103,9 @@ function Dashboard({ d }) {
 
       {/* 전환 깔때기 */}
       <Funnel />
+
+      {/* 토스앱 익명 방문자 화면 도달 깔때기 */}
+      <TossScreens />
 
       {/* 가입 사용자 명단 (익명 제외) */}
       <UserTable kind="real" title="가입 사용자" total={realCount} />
@@ -340,6 +348,86 @@ function Funnel() {
           </p>
         </>
       )}
+    </section>
+  )
+}
+
+// 토스앱 익명 방문자가 각 화면까지 도달한 인원(앱 진입 대비 %). 도달률이 낮은 화면 = 이탈 지점.
+const TOSS_SCREENS = [
+  { key: 'home', label: '홈' },
+  { key: 'new', label: '새 할 일 작성' },
+  { key: 'detail', label: '할 일 상세' },
+  { key: 'edit', label: '할 일 편집' },
+  { key: 'stats', label: '통계' },
+  { key: 'archive', label: '기록' },
+  { key: 'settings', label: '설정' },
+]
+
+function TossScreens() {
+  const [d, setD] = useState(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    fetchAdminTossScreens()
+      .then(setD)
+      .catch((e) => setErr(e?.message || '불러오지 못했습니다.'))
+  }, [])
+
+  const entered = d?.entered ?? 0
+  const pct = (n) => (entered ? Math.round((n / entered) * 100) : 0)
+
+  return (
+    <section>
+      <h2 className="mb-2 text-[13px] font-semibold text-sub">
+        토스앱 익명 방문자 — 화면 도달 (앱 진입 대비 %)
+      </h2>
+      {err ? (
+        <p className="rounded-xl bg-fill px-3 py-2 text-[13px] text-sub">{err}</p>
+      ) : !d ? (
+        <p className="py-8 text-center text-[13px] text-sub">불러오는 중…</p>
+      ) : entered === 0 ? (
+        <p className="rounded-xl bg-fill px-3 py-2 text-[13px] text-sub">
+          아직 토스앱 방문 데이터가 없습니다. (이 기능 배포 이후부터 집계됩니다)
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-line">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-line text-left text-sub">
+                <th className="px-3 py-2 font-medium">화면</th>
+                <th className="px-3 py-2 text-right font-medium">도달 인원</th>
+                <th className="px-3 py-2 text-right font-medium">진입 대비</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-line/60">
+                <td className="px-3 py-2 font-medium text-ink">앱 진입</td>
+                <td className="px-3 py-2 text-right font-bold tabular-nums text-ink">
+                  {nfmt(entered)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-sub">100%</td>
+              </tr>
+              {TOSS_SCREENS.map((s) => {
+                const c = d[s.key] ?? 0
+                return (
+                  <tr key={s.key} className="border-b border-line/60 last:border-0">
+                    <td className="px-3 py-2 text-ink">{s.label}</td>
+                    <td className="px-3 py-2 text-right font-bold tabular-nums text-ink">
+                      {nfmt(c)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-sub">{pct(c)}%</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="mt-2 text-[11px] leading-relaxed text-sub">
+        · 인원은 사람 수(distinct). 한 방문자가 같은 화면을 여러 번 봐도 1명.
+        <br />· 도달률이 낮은 화면 = 방문자가 거기까지 가기 전에 앱을 떠난 지점.
+        <br />· 이 기능 배포 이후 방문분만 집계됩니다(과거분 없음).
+      </p>
     </section>
   )
 }

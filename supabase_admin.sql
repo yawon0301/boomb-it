@@ -201,3 +201,48 @@ end;
 $$;
 
 grant execute on function public.admin_funnel() to authenticated;
+
+-- 6) 토스앱 익명 방문자 화면 도달 깔때기 ─────────────────────────────
+--    'entered'(앱 진입 = platform_toss 기록자)를 분모로, 각 화면에 '도달한 사람 수'.
+--    수집: 클라이언트 MobileApp/ScreenTracker 가 platform_toss + screen_* 를
+--          사용자당 1회(user_event PK)로 기록. 배포 이후분부터 집계됨.
+create or replace function public.admin_toss_screens()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_admin uuid := '095d57ed-60e5-4d28-bb48-72183f0763a5';
+  result  jsonb;
+begin
+  if auth.uid() is null or auth.uid() <> v_admin then
+    raise exception 'not authorized';
+  end if;
+
+  with toss as (   -- 토스앱 진입자(= 앱을 실제로 연 익명 방문자)
+    select distinct user_id from public.user_event where event = 'platform_toss'
+  ),
+  ev as (          -- 진입자 중 각 화면에 도달한 distinct 인원
+    select ue.event, count(distinct ue.user_id) as c
+    from public.user_event ue
+    join toss t on t.user_id = ue.user_id
+    where ue.event like 'screen_%'
+    group by ue.event
+  )
+  select jsonb_build_object(
+    'entered',  (select count(*) from toss),
+    'home',     coalesce((select c from ev where event = 'screen_home'), 0),
+    'new',      coalesce((select c from ev where event = 'screen_new'), 0),
+    'detail',   coalesce((select c from ev where event = 'screen_detail'), 0),
+    'edit',     coalesce((select c from ev where event = 'screen_edit'), 0),
+    'stats',    coalesce((select c from ev where event = 'screen_stats'), 0),
+    'archive',  coalesce((select c from ev where event = 'screen_archive'), 0),
+    'settings', coalesce((select c from ev where event = 'screen_settings'), 0)
+  ) into result;
+
+  return result;
+end;
+$$;
+
+grant execute on function public.admin_toss_screens() to authenticated;

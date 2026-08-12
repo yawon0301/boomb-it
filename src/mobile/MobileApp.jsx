@@ -1,8 +1,8 @@
 // 토스 웹뷰용 모바일 앱 — 데스크톱 App 과 별개의 라우팅/셸.
 // (같은 Supabase 백엔드·store·폭탄 컴포넌트를 그대로 재사용)
 import { useEffect, useRef, useState } from 'react'
-import { Routes, Route, Outlet, Navigate } from 'react-router-dom'
-import { initStore, listPending, getSettings, setSettings } from '../lib/store'
+import { Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom'
+import { initStore, listPending, getSettings, setSettings, recordEvent } from '../lib/store'
 import { remainingMs } from '../lib/time'
 import { playBoom } from '../lib/sound'
 import { useNow, useStore } from '../lib/hooks'
@@ -88,6 +88,38 @@ function MobileShell() {
   )
 }
 
+// 토스앱 익명 방문자의 "화면 도달"을 기록 — 관리자 화면 도달 깔때기용.
+//  · MobileApp 은 토스 빌드(isTossEnv)에서만 렌더되므로, 여기 온 사용자 = 토스앱 사용자.
+//  · 앱 진입 1회(platform_toss) + 도달한 화면(screen_*)을 "사용자당 1회" 기록.
+//    (user_event PK (user_id,event) 로 서버에서도 중복 무시. sent 로 세션 내 재호출도 차단)
+function screenEvent(pathname) {
+  if (pathname === '/') return 'screen_home'
+  if (pathname === '/new') return 'screen_new'
+  if (pathname === '/stats') return 'screen_stats'
+  if (pathname === '/archive') return 'screen_archive'
+  if (pathname === '/settings') return 'screen_settings'
+  if (/^\/task\/[^/]+\/edit$/.test(pathname)) return 'screen_edit'
+  if (/^\/task\//.test(pathname)) return 'screen_detail'
+  return null
+}
+
+function ScreenTracker() {
+  const loc = useLocation()
+  const sent = useRef(new Set())
+  useEffect(() => {
+    if (sent.current.has('platform_toss')) return
+    sent.current.add('platform_toss')
+    recordEvent('platform_toss')
+  }, [])
+  useEffect(() => {
+    const ev = screenEvent(loc.pathname)
+    if (!ev || sent.current.has(ev)) return
+    sent.current.add(ev)
+    recordEvent(ev)
+  }, [loc.pathname])
+  return null
+}
+
 export default function MobileApp() {
   // 첫 사용자만 튜토리얼(설정에 tutorialSeen 없을 때). 두 번째부터는 바로 홈.
   const [showTutorial, setShowTutorial] = useState(() => !getSettings().tutorialSeen)
@@ -104,6 +136,7 @@ export default function MobileApp() {
   return (
     <>
       <ExplosionWatcher />
+      <ScreenTracker />
       {showTutorial && <MobileTutorial onDone={finishTutorial} />}
       <Routes>
         <Route element={<MobileShell />}>
